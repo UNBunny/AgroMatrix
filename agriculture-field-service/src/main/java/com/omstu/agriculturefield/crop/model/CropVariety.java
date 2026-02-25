@@ -13,14 +13,20 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
 import java.math.BigDecimal;
 import java.util.Set;
 
 @Entity
 @Table(name = "crop_varieties")
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@ToString(exclude = "diseaseResistance")
 public class CropVariety {
 
     @Id
@@ -57,4 +63,10 @@ public class CropVariety {
     private Boolean isHybrid = false;
 
     private String notes; // Характеристики/особенности, заметки либо описание от агронома
+
+    private String origin; // Происхождение/страна/организация-оригинатор
+
+    private String recommendedRegions; // Реестровые регионы допуска
+
+    private Boolean isTopByArea; // Входит ли в топ по объёму высева (Россельхозцентр)
 }

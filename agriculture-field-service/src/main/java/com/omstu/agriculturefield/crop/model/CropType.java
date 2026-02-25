@@ -31,4 +31,6 @@ public class CropType {
     private BigDecimal waterRequirementsMm; // Требования к поливу (мм за сезон)
 
     private String notes; // Заметки агронома либо описание
+
+    private String mlCropCode; // Код для ML-модели (spring_wheat, sunflower и т.д.)
 }

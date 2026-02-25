@@ -10,5 +10,6 @@ public record CropTypeResponse(
         BigDecimal optimalTemperatureMin,
         BigDecimal optimalTemperatureMax,
         BigDecimal waterRequirementsMm,
-        String notes
+        String notes,
+        String mlCropCode
 ) {}

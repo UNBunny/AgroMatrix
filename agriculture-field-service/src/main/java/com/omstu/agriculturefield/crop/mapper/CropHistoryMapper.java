@@ -5,6 +5,7 @@ import com.omstu.agriculturefield.crop.dto.CropHistoryResponse;
 import com.omstu.agriculturefield.crop.model.CropHistory;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
 @Mapper(componentModel = "spring")
 public interface CropHistoryMapper {
@@ -22,4 +23,10 @@ public interface CropHistoryMapper {
     @Mapping(target = "cropType", ignore = true)
     @Mapping(target = "cropVariety", ignore = true)
     CropHistory toEntity(CropHistoryRequest request);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "field", ignore = true)
+    @Mapping(target = "cropType", ignore = true)
+    @Mapping(target = "cropVariety", ignore = true)
+    void updateEntity(CropHistoryRequest request, @MappingTarget CropHistory entity);
 }
