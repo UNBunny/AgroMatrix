@@ -1,5 +1,8 @@
 package com.omstu.agriculturefield.disease.service.impl;
 
+import com.omstu.agriculturefield.common.exception.ConflictException;
+import com.omstu.agriculturefield.common.exception.NotFoundException;
+import com.omstu.agriculturefield.common.exception.ValidationException;
 import com.omstu.agriculturefield.common.service.BaseService;
 import com.omstu.agriculturefield.crop.model.CropVariety;
 import com.omstu.agriculturefield.crop.repository.CropVarietyRepository;
@@ -16,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -41,17 +45,24 @@ public class DiseaseResistanceServiceImpl implements BaseService<DiseaseResistan
     public DiseaseResistanceResponse getById(Long id) {
         return diseaseResistanceRepository.findById(id)
                 .map(diseaseResistanceMapper::toResponse)
-                .orElseThrow(() -> new RuntimeException("Disease resistance not found with id: " + id));
+                .orElseThrow(() -> new NotFoundException("Disease resistance not found with id: " + id));
     }
 
     @Override
     @Transactional
     public DiseaseResistanceResponse create(DiseaseResistanceRequest request) {
+        validateDiseaseResistanceRequest(request);
+
         Disease disease = diseaseRepository.findById(request.diseaseId())
-                .orElseThrow(() -> new RuntimeException("Disease not found with id: " + request.diseaseId()));
+                .orElseThrow(() -> new NotFoundException("Disease not found with id: " + request.diseaseId()));
 
         CropVariety cropVariety = cropVarietyRepository.findById(request.cropVarietyId())
-                .orElseThrow(() -> new RuntimeException("Crop variety not found with id: " + request.cropVarietyId()));
+                .orElseThrow(() -> new NotFoundException("Crop variety not found with id: " + request.cropVarietyId()));
+
+        // Check for duplicate pair
+        if (diseaseResistanceRepository.existsByDiseaseIdAndCropVarietyId(request.diseaseId(), request.cropVarietyId())) {
+            throw new ConflictException("Disease resistance for this disease and crop variety pair already exists");
+        }
 
         DiseaseResistance diseaseResistance = diseaseResistanceMapper.toEntity(request);
         diseaseResistance.setDisease(disease);
@@ -62,17 +73,32 @@ public class DiseaseResistanceServiceImpl implements BaseService<DiseaseResistan
         return diseaseResistanceMapper.toResponse(saved);
     }
 
+    private void validateDiseaseResistanceRequest(DiseaseResistanceRequest request) {
+        // Validate resistanceLevel
+        if (request.resistanceLevel() == null) {
+            throw new ValidationException("Resistance level is required");
+        }
+
+        Set<String> validLevels = Set.of("SUSCEPTIBLE", "MODERATELY_SUSCEPTIBLE", "MODERATELY_RESISTANT", "RESISTANT", "HIGHLY_RESISTANT");
+        String levelName = request.resistanceLevel().name();
+        if (!validLevels.contains(levelName)) {
+            throw new ValidationException("Invalid resistance level: " + levelName);
+        }
+    }
+
     @Override
     @Transactional
     public DiseaseResistanceResponse update(Long id, DiseaseResistanceRequest request) {
         DiseaseResistance existing = diseaseResistanceRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Disease resistance not found with id: " + id));
+                .orElseThrow(() -> new NotFoundException("Disease resistance not found with id: " + id));
+
+        validateDiseaseResistanceRequest(request);
 
         Disease disease = diseaseRepository.findById(request.diseaseId())
-                .orElseThrow(() -> new RuntimeException("Disease not found with id: " + request.diseaseId()));
+                .orElseThrow(() -> new NotFoundException("Disease not found with id: " + request.diseaseId()));
 
         CropVariety cropVariety = cropVarietyRepository.findById(request.cropVarietyId())
-                .orElseThrow(() -> new RuntimeException("Crop variety not found with id: " + request.cropVarietyId()));
+                .orElseThrow(() -> new NotFoundException("Crop variety not found with id: " + request.cropVarietyId()));
 
         existing.setDisease(disease);
         existing.setCropVariety(cropVariety);
@@ -87,7 +113,7 @@ public class DiseaseResistanceServiceImpl implements BaseService<DiseaseResistan
     @Transactional
     public void delete(Long id) {
         DiseaseResistance diseaseResistance = diseaseResistanceRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Disease resistance not found with id: " + id));
+                .orElseThrow(() -> new NotFoundException("Disease resistance not found with id: " + id));
         diseaseResistanceRepository.delete(diseaseResistance);
         log.info("Deleted disease resistance with id: {}", id);
     }

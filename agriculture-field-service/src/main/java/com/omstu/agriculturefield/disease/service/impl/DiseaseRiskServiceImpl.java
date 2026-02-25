@@ -20,35 +20,18 @@ import java.time.Month;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
-/**
- * Сервис оценки агрономических рисков для полей.
- *
- * Оценивает:
- * 1. Риск засухи (на основе ГТК и длительности сухого периода)
- * 2. Риск заморозков (минимальная температура)
- * 3. Риск теплового стресса (дни с T > 30°C)
- * 4. Риск конкретных болезней (rule-based по погодным условиям)
- *
- * Интегрируется с Weather Service для получения прогнозных и исторических данных.
- */
+// Оценивает риски засухи, заморозков, теплового стресса и болезней для поля.
+// Тянет прогноз/историю из Weather Service, при недоступности — возвращает fallback.
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class DiseaseRiskService {
+public class DiseaseRiskServiceImpl implements com.omstu.agriculturefield.disease.service.DiseaseRiskService {
 
     private final WeatherServiceClient weatherServiceClient;
     private final DiseaseRiskRuleRepository riskRuleRepository;
     private final AgriculturalFieldRepository fieldRepository;
 
-    /**
-     * Оценить агрономические риски для конкретного поля.
-     *
-     * @param fieldId ID поля
-     * @param cropName Название культуры (например: "пшеница", "ячмень")
-     * @return Mono с полной оценкой рисков
-     */
     @Transactional(readOnly = true)
     public Mono<DiseaseRiskResponse> assessFieldRisk(Long fieldId, String cropName) {
         log.info("Оценка рисков для поля {} с культурой '{}'", fieldId, cropName);
@@ -76,10 +59,7 @@ public class DiseaseRiskService {
                 }));
     }
 
-    /**
-     * Fallback: если прогноз недоступен — используем исторические данные
-     * за аналогичный период прошлого года.
-     */
+    // fallback: прогноз недоступен — берём те же даты прошлого года
     private Mono<DiseaseRiskResponse> getHistoricalFallback(
             AgriculturalField field, String cropName, double lat, double lon) {
 
@@ -91,9 +71,6 @@ public class DiseaseRiskService {
                 .map(weatherData -> buildRiskResponse(field, cropName, weatherData, "HISTORICAL"));
     }
 
-    /**
-     * Основной метод: строит полный ответ с оценками рисков.
-     */
     private DiseaseRiskResponse buildRiskResponse(
             AgriculturalField field,
             String cropName,
@@ -143,10 +120,11 @@ public class DiseaseRiskService {
                 Math.round(overallScore * 100.0) / 100.0,
                 weather.avgTemp(),
                 weather.sumPrecipitation(),
-                null, // humidity — нет в текущем формате
+                weather.avgHumidity(),
                 weather.heatStressDays(),
                 weather.longestDryPeriod(),
                 weather.gtk(),
+
                 droughtRisk, droughtScore, droughtDesc,
                 frostRisk, frostScore, frostDesc,
                 heatRisk, heatScore, heatDesc,
@@ -157,9 +135,7 @@ public class DiseaseRiskService {
         );
     }
 
-    /**
-     * Fallback: ответ без погодных данных (когда все API недоступны).
-     */
+    // все источники погоды недоступны — возвращаем MEDIUM с предупреждением
     private DiseaseRiskResponse buildFallbackResponse(AgriculturalField field, String cropName) {
         int currentMonth = LocalDateTime.now().getMonthValue();
         String seasonWarning = getSeasonWarning(currentMonth);
@@ -190,22 +166,23 @@ public class DiseaseRiskService {
 
     // ===== Оценки абиотических рисков =====
 
-    /**
-     * Оценка риска засухи на основе ГТК и длительности сухого периода.
-     *
-     * ГТК (Гидротермический коэффициент Селянинова):
-     * < 0.4 — сильная засуха (CRITICAL)
-     * 0.4-0.7 — засушливо (HIGH)
-     * 0.7-1.0 — недостаточное увлажнение (MEDIUM)
-     * > 1.0 — достаточное увлажнение (LOW)
-     */
+    // ГТК < 0.4 = CRITICAL, 0.4-0.7 = HIGH, 0.7-1.0 = MEDIUM, >1.0 = LOW
+    // зимой ГТК=0 это норма — не считаем засухой
     private RiskLevel assessDroughtRisk(WeatherForecastData weather) {
         Double gtk = weather.gtk();
         Integer dryPeriod = weather.longestDryPeriod();
 
         if (gtk == null && dryPeriod == null) return RiskLevel.LOW;
 
-        // ГТК — основной индикатор
+        // Проверяем сезон - зимой засуха не актуальна
+        boolean isWinter = isWinter();
+
+        if (isWinter) {
+            // Зимой ГТК=0 это норма, риск засухи LOW
+            return RiskLevel.LOW;
+        }
+
+        // ГТК — основной индикатор (только в вегетационный период)
         if (gtk != null) {
             if (gtk < 0.4) return RiskLevel.CRITICAL;
             if (gtk < 0.7) return RiskLevel.HIGH;
@@ -214,32 +191,49 @@ public class DiseaseRiskService {
 
         // Длительный сухой период — дополнительный фактор
         if (dryPeriod != null) {
-            if (dryPeriod >= 14) return RiskLevel.CRITICAL;
-            if (dryPeriod >= 10) return RiskLevel.HIGH;
-            if (dryPeriod >= 7) return RiskLevel.MEDIUM;
+            if (dryPeriod >= 14) return RiskLevel.HIGH;  // Зимой снижаем критичность
+            if (dryPeriod >= 10) return RiskLevel.MEDIUM;
+            if (dryPeriod >= 7) return RiskLevel.LOW;
         }
 
         return RiskLevel.LOW;
     }
 
-    /**
-     * Оценка риска заморозков на основе минимальной температуры.
-     */
+    // пороги разные по сезонам: зимой норма -25°C, весной/осенью уже -2°C критично, летом 0°C = CRITICAL
     private RiskLevel assessFrostRisk(WeatherForecastData weather) {
         Double minTemp = weather.minTempRecord();
         if (minTemp == null) return RiskLevel.LOW;
 
-        if (minTemp <= -10.0) return RiskLevel.CRITICAL;
-        if (minTemp <= -5.0) return RiskLevel.HIGH;
-        if (minTemp <= 0.0) return RiskLevel.MEDIUM;
-        if (minTemp <= 3.0) return RiskLevel.LOW; // слабый риск при приближении к 0
+        Month currentMonth = LocalDateTime.now().getMonth();
+        boolean isWinter = isWinter();
+        boolean isSpringOrFall = currentMonth == Month.MARCH ||
+                                currentMonth == Month.APRIL ||
+                                currentMonth == Month.SEPTEMBER ||
+                                currentMonth == Month.OCTOBER ||
+                                currentMonth == Month.NOVEMBER;
+
+        if (isWinter) {
+            // Зимой критично только экстремальные морозы ниже -30°C (могут погубить даже озимые)
+            if (minTemp <= -30.0) return RiskLevel.CRITICAL;
+            if (minTemp <= -25.0) return RiskLevel.HIGH;
+            if (minTemp <= -20.0) return RiskLevel.MEDIUM;
+            return RiskLevel.LOW; // Морозы зимой - норма
+        } else if (isSpringOrFall) {
+            // Весной и осенью заморозки опасны для всходов/цветения
+            if (minTemp <= -5.0) return RiskLevel.CRITICAL;
+            if (minTemp <= -2.0) return RiskLevel.HIGH;
+            if (minTemp <= 0.0) return RiskLevel.MEDIUM;
+            if (minTemp <= 3.0) return RiskLevel.LOW;
+        } else {
+            // Летом любые заморозки очень опасны
+            if (minTemp <= 0.0) return RiskLevel.CRITICAL;
+            if (minTemp <= 3.0) return RiskLevel.HIGH;
+            if (minTemp <= 5.0) return RiskLevel.MEDIUM;
+        }
 
         return RiskLevel.LOW;
     }
 
-    /**
-     * Оценка риска теплового стресса.
-     */
     private RiskLevel assessHeatStressRisk(WeatherForecastData weather) {
         Integer heatDays = weather.heatStressDays();
         Integer extremeDays = weather.extremeHeatDays();
@@ -255,10 +249,7 @@ public class DiseaseRiskService {
 
     // ===== Оценка рисков болезней (rule-based) =====
 
-    /**
-     * Оценивает риски болезней по правилам из БД.
-     * Для каждого активного правила, подходящего под культуру — проверяет условия по погоде.
-     */
+    // для каждого активного правила из БД проверяем условия по погоде
     private List<DiseaseRiskItem> assessDiseaseRisks(String cropName, WeatherForecastData weather) {
         List<DiseaseRiskRule> rules = riskRuleRepository.findActiveRulesByCrop(cropName);
         log.info("Найдено {} правил для культуры '{}'", rules.size(), cropName);
@@ -300,10 +291,7 @@ public class DiseaseRiskService {
         return risks;
     }
 
-    /**
-     * Проверяет условия правила по погодным данным.
-     * Возвращает список сработавших условий (пустой — если ничего не сработало).
-     */
+    // возвращает список сработавших условий, пустой список = правило не применяется
     private List<String> evaluateRule(DiseaseRiskRule rule, WeatherForecastData weather) {
         List<String> triggered = new ArrayList<>();
 
@@ -384,12 +372,17 @@ public class DiseaseRiskService {
             }
         }
 
+        // Влажность воздуха
+        if (rule.getHumidityMinThreshold() != null && weather.avgHumidity() != null) {
+            if (weather.avgHumidity() >= rule.getHumidityMinThreshold()) {
+                triggered.add(String.format("Влажность воздуха %.0f%% ≥ порог %.0f%%",
+                        weather.avgHumidity(), rule.getHumidityMinThreshold()));
+            }
+        }
+
         return triggered;
     }
 
-    /**
-     * Подсчитывает общее количество условий в правиле.
-     */
     private int countTotalConditions(DiseaseRiskRule rule) {
         int count = 0;
         if (rule.getTempMinThreshold() != null) count++;
@@ -404,11 +397,9 @@ public class DiseaseRiskService {
         return Math.max(count, 1); // Защита от деления на 0
     }
 
-    /**
-     * Корректирует уровень риска в зависимости от доли совпавших условий.
-     */
+    // >= 80% условий = базовый уровень, 50-80% = минус один уровень, < 50% = минус два
     private RiskLevel adjustRiskByMatchRatio(RiskLevel baseLevel, double matchRatio) {
-        if (matchRatio >= 0.8) return baseLevel; // Всё совпало — базовый уровень
+        if (matchRatio >= 0.8) return baseLevel; // Всё совпало - базовый уровень
         if (matchRatio >= 0.5) {
             // Понижаем на один уровень
             return switch (baseLevel) {
@@ -428,6 +419,12 @@ public class DiseaseRiskService {
     // ===== Описания рисков =====
 
     private String describeDroughtRisk(WeatherForecastData weather, RiskLevel level) {
+        boolean isWinter = isWinter();
+
+        if (isWinter) {
+            return "Зимний период — растения в покое, риск засухи не актуален";
+        }
+
         if (level == RiskLevel.LOW) return "Увлажнение достаточное, риск засухи низкий";
 
         StringBuilder sb = new StringBuilder();
@@ -445,14 +442,32 @@ public class DiseaseRiskService {
     }
 
     private String describeFrostRisk(WeatherForecastData weather, RiskLevel level) {
-        if (level == RiskLevel.LOW) return "Температура в безопасном диапазоне";
+        boolean isWinter = isWinter();
+
+        if (level == RiskLevel.LOW) {
+            if (isWinter) {
+                return "Температура в пределах зимней нормы";
+            }
+            return "Температура в безопасном диапазоне";
+        }
+
         Double minTemp = weather.minTempRecord();
         if (minTemp == null) return "Данные о минимальной температуре недоступны";
+
+        if (isWinter) {
+            // Зимой другие пороги критичности
+            return String.format("Минимальная температура %.1f°C — %s",
+                    minTemp,
+                    minTemp <= -30 ? "экстремальный мороз, опасен даже для озимых культур" :
+                    minTemp <= -25 ? "сильный мороз, контролируйте состояние озимых" :
+                    "мороз в пределах зимней нормы для озимых");
+        }
+
         return String.format("Минимальная температура %.1f°C — %s",
                 minTemp,
                 minTemp <= -10 ? "критический заморозок, возможна гибель растений" :
                 minTemp <= -5 ? "сильный заморозок, высокий риск повреждений" :
-                minTemp <= 0 ? "заморозок, возможны повреждения нежных культур" :
+                minTemp <= 0 ? "заморозок, возможны повреждения всходов и цветения" :
                 "приближение к точке замерзания");
     }
 
@@ -478,21 +493,34 @@ public class DiseaseRiskService {
 
         List<String> recs = new ArrayList<>();
 
-        // Засуха
-        if (drought == RiskLevel.CRITICAL || drought == RiskLevel.HIGH) {
-            recs.add("🔴 Высокий риск засухи — рассмотрите орошение или мульчирование");
-            if (weather.gtk() != null && weather.gtk() < 0.4) {
-                recs.add("⚠️ ГТК критически низкий — культуры под угрозой без дополнительного полива");
+        boolean isWinter = isWinter();
+
+        // Засуха (только если не зима)
+        if (!isWinter) {
+            if (drought == RiskLevel.CRITICAL || drought == RiskLevel.HIGH) {
+                recs.add("🔴 Высокий риск засухи — рассмотрите орошение или мульчирование");
+                if (weather.gtk() != null && weather.gtk() < 0.4) {
+                    recs.add("⚠️ ГТК критически низкий — культуры под угрозой без дополнительного полива");
+                }
+            } else if (drought == RiskLevel.MEDIUM) {
+                recs.add("🟡 Умеренный риск засухи — следите за влажностью почвы");
             }
-        } else if (drought == RiskLevel.MEDIUM) {
-            recs.add("🟡 Умеренный риск засухи — следите за влажностью почвы");
         }
 
-        // Заморозки
-        if (frost == RiskLevel.CRITICAL || frost == RiskLevel.HIGH) {
-            recs.add("🔴 Высокий риск заморозков — укройте посевы или отложите посев");
-        } else if (frost == RiskLevel.MEDIUM) {
-            recs.add("🟡 Возможны заморозки — подготовьте укрывные материалы");
+        // Заморозки (с учетом сезона)
+        if (isWinter) {
+            if (frost == RiskLevel.CRITICAL) {
+                recs.add("🔴 Экстремальные морозы — контролируйте состояние озимых культур");
+            } else if (frost == RiskLevel.HIGH) {
+                recs.add("🟡 Сильные морозы — проверьте укрытие озимых, снежный покров");
+            }
+            // Зимой MEDIUM/LOW - норма, не добавляем рекомендации
+        } else {
+            if (frost == RiskLevel.CRITICAL || frost == RiskLevel.HIGH) {
+                recs.add("🔴 Высокий риск заморозков — укройте посевы или отложите посев");
+            } else if (frost == RiskLevel.MEDIUM) {
+                recs.add("🟡 Возможны заморозки — подготовьте укрывные материалы");
+            }
         }
 
         // Тепловой стресс
@@ -523,6 +551,10 @@ public class DiseaseRiskService {
         return recs;
     }
 
+    private boolean isWinter() {
+        Month m = LocalDateTime.now().getMonth();
+        return m == Month.DECEMBER || m == Month.JANUARY || m == Month.FEBRUARY;
+    }
     // ===== Утилиты =====
 
     private Double riskLevelToScore(RiskLevel level) {

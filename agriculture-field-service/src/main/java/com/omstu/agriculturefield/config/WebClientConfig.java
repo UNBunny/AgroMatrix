@@ -17,21 +17,58 @@ import java.util.concurrent.TimeUnit;
 public class WebClientConfig {
 
     private final WeatherServiceProperties weatherProps;
+    private final AgroMonitoringProperties agroMonitoringProps;
+    private final MLServiceProperties mlServiceProps;
+    private final NdviServiceProperties ndviServiceProps;
 
     @Bean("weatherWebClient")
     public WebClient weatherWebClient() {
+        return createWebClient(
+                weatherProps.getBaseUrl(),
+                weatherProps.getConnectTimeoutMs(),
+                weatherProps.getReadTimeoutMs()
+        );
+    }
+
+    @Bean("agroMonitoringWebClient")
+    public WebClient agroMonitoringWebClient() {
+        return createWebClient(
+                agroMonitoringProps.getBaseUrl(),
+                agroMonitoringProps.getConnectTimeoutMs(),
+                agroMonitoringProps.getReadTimeoutMs()
+        );
+    }
+
+    @Bean("mlWebClient")
+    public WebClient mlWebClient() {
+        return createWebClient(
+                mlServiceProps.getBaseUrl(),
+                mlServiceProps.getConnectTimeoutMs(),
+                mlServiceProps.getReadTimeoutMs()
+        );
+    }
+
+    @Bean("ndviWebClient")
+    public WebClient ndviWebClient() {
+        return createWebClient(
+                ndviServiceProps.getUrl(),
+                ndviServiceProps.getConnectTimeoutMs(),
+                ndviServiceProps.getReadTimeoutMs()
+        );
+    }
+
+    private WebClient createWebClient(String baseUrl, int connectTimeoutMs, long readTimeoutMs) {
         HttpClient httpClient = HttpClient.create()
-                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, weatherProps.getConnectTimeoutMs())
-                .responseTimeout(Duration.ofMillis(weatherProps.getReadTimeoutMs()))
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, connectTimeoutMs)
+                .responseTimeout(Duration.ofMillis(readTimeoutMs))
                 .doOnConnected(conn ->
                         conn.addHandlerLast(new ReadTimeoutHandler(
-                                weatherProps.getReadTimeoutMs(), TimeUnit.MILLISECONDS)));
+                                readTimeoutMs, TimeUnit.MILLISECONDS)));
 
         return WebClient.builder()
-                .baseUrl(weatherProps.getBaseUrl())
+                .baseUrl(baseUrl)
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024))
                 .build();
     }
 }
-

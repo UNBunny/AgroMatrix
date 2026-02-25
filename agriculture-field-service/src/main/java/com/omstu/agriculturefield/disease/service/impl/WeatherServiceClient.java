@@ -13,10 +13,7 @@ import reactor.util.retry.Retry;
 
 import java.time.Duration;
 
-/**
- * Клиент для вызова Weather Service.
- * При ошибке API — повторяет запрос с таймаутом 50 секунд.
- */
+// HTTP-клиент к Weather Service, retry при 5xx и таймаутах
 @Service
 @Slf4j
 public class WeatherServiceClient {
@@ -32,10 +29,6 @@ public class WeatherServiceClient {
         this.properties = properties;
     }
 
-    /**
-     * Получить прогноз агрометрик на N дней вперёд.
-     * При ошибке API — retry с таймаутом 50 секунд между попытками.
-     */
     public Mono<WeatherForecastData> getForecastMetrics(Double lat, Double lon, Integer days) {
         log.info("Запрос прогноза агрометрик: lat={}, lon={}, days={}", lat, lon, days);
 
@@ -58,10 +51,6 @@ public class WeatherServiceClient {
                 });
     }
 
-    /**
-     * Получить исторические агрометрики за период.
-     * При ошибке API — retry с таймаутом 50 секунд между попытками.
-     */
     public Mono<WeatherForecastData> getHistoricalMetrics(Double lat, Double lon, String startDate, String endDate) {
         log.info("Запрос исторических агрометрик: lat={}, lon={}, period={} — {}", lat, lon, startDate, endDate);
 
@@ -83,10 +72,6 @@ public class WeatherServiceClient {
                 });
     }
 
-    /**
-     * Получить скользящее окно прогноза (7/14 дней) для анализа рисков болезней.
-     * При ошибке API — retry с таймаутом 50 секунд между попытками.
-     */
     public Mono<ForecastWindowData> getForecastWindow(Double lat, Double lon) {
         log.info("Запрос скользящего окна прогноза: lat={}, lon={}", lat, lon);
 
@@ -107,12 +92,7 @@ public class WeatherServiceClient {
                 });
     }
 
-    /**
-     * Создаёт спецификацию повторных попыток:
-     * - Максимум maxRetries попыток
-     * - Таймаут 50 секунд между попытками при ошибке API
-     * - Повторять только при серверных ошибках (5xx) и таймаутах
-     */
+    // повторяем только при 5xx и 429, не при 4xx
     private Retry createRetrySpec(String methodName) {
         return Retry.backoff(properties.getMaxRetries(), Duration.ofMillis(properties.getRetryTimeoutMs()))
                 .maxBackoff(Duration.ofMillis(properties.getRetryTimeoutMs()))

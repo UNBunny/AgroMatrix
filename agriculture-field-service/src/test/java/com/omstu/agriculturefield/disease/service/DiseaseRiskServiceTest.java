@@ -82,7 +82,8 @@ class DiseaseRiskServiceTest {
             "MEDIUM",
             18.0,
             0,
-            3
+            3,
+            65.0
         );
 
         when(fieldRepository.findById(1L)).thenReturn(Optional.of(testField));
@@ -114,7 +115,8 @@ class DiseaseRiskServiceTest {
             "MEDIUM",
             18.0,
             0,
-            3
+            3,
+            65.0
         );
 
         when(fieldRepository.findById(1L)).thenReturn(Optional.of(testField));
@@ -142,7 +144,8 @@ class DiseaseRiskServiceTest {
             "MEDIUM",
             18.0,
             0,
-            3
+            3,
+            65.0
         );
 
         when(fieldRepository.findById(1L)).thenReturn(Optional.of(testField));
@@ -169,7 +172,8 @@ class DiseaseRiskServiceTest {
             "MEDIUM",
             18.0,
             0,
-            3
+            3,
+            65.0
         );
 
         when(fieldRepository.findById(1L)).thenReturn(Optional.of(testField));
@@ -196,7 +200,8 @@ class DiseaseRiskServiceTest {
             "MEDIUM",         // stressLevel
             -5.0,             // avgTemp
             0,                // extremeHeatDays
-            3                 // longestDryPeriod
+            3,                // longestDryPeriod
+            65.0              // avgHumidity
         );
 
         when(fieldRepository.findById(1L)).thenReturn(Optional.of(testField));
@@ -224,7 +229,8 @@ class DiseaseRiskServiceTest {
             "MEDIUM",         // stressLevel
             2.0,              // avgTemp
             0,                // extremeHeatDays
-            3                 // longestDryPeriod
+            3,                // longestDryPeriod
+            65.0              // avgHumidity
         );
 
         when(fieldRepository.findById(1L)).thenReturn(Optional.of(testField));
@@ -251,7 +257,8 @@ class DiseaseRiskServiceTest {
             "MEDIUM",
             18.0,
             7,
-            3
+            3,
+            65.0
         );
 
         when(fieldRepository.findById(1L)).thenReturn(Optional.of(testField));
@@ -279,7 +286,8 @@ class DiseaseRiskServiceTest {
             "MEDIUM",
             18.0,
             5,
-            3
+            3,
+            65.0
         );
 
         when(fieldRepository.findById(1L)).thenReturn(Optional.of(testField));
@@ -306,7 +314,8 @@ class DiseaseRiskServiceTest {
             "LOW",
             18.0,
             0,
-            2
+            2,
+            65.0
         );
 
         DiseaseRiskRule rule = DiseaseRiskRule.builder()
@@ -359,7 +368,8 @@ class DiseaseRiskServiceTest {
             "MEDIUM",
             16.0,
             2,
-            5
+            5,
+            65.0
         );
 
         when(fieldRepository.findById(1L)).thenReturn(Optional.of(testField));
@@ -423,7 +433,8 @@ class DiseaseRiskServiceTest {
             "MEDIUM",
             18.0,
             7,
-            14
+            14,
+            65.0
         );
 
         when(fieldRepository.findById(1L)).thenReturn(Optional.of(testField));
@@ -454,7 +465,8 @@ class DiseaseRiskServiceTest {
             "MEDIUM",
             18.0,
             0,
-            14
+            14,
+            65.0
         );
 
         when(fieldRepository.findById(1L)).thenReturn(Optional.of(testField));
@@ -482,7 +494,8 @@ class DiseaseRiskServiceTest {
             "MEDIUM",
             18.0,
             0,
-            3
+            3,
+            65.0
         );
 
         when(fieldRepository.findById(1L)).thenReturn(Optional.of(testField));

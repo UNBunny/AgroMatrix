@@ -11,10 +11,7 @@ public interface DiseaseRiskRuleRepository extends JpaRepository<DiseaseRiskRule
 
     List<DiseaseRiskRule> findByIsActiveTrue();
 
-    /**
-     * Найти активные правила, применимые к данной культуре.
-     * affectedCrops хранит культуры через запятую, ищем совпадение подстроки.
-     */
+    // affectedCrops хранит культуры через запятую — ищем через LIKE
     @Query("SELECT r FROM DiseaseRiskRule r WHERE r.isActive = true " +
             "AND LOWER(r.affectedCrops) LIKE LOWER(CONCAT('%', :cropName, '%'))")
     List<DiseaseRiskRule> findActiveRulesByCrop(@Param("cropName") String cropName);

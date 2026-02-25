@@ -1,9 +1,6 @@
 package com.omstu.agriculturefield.disease.dto;
 
-/**
- * DTO для агрометеорологических данных, получаемых от Weather Service.
- * Зеркалирует com.omstu.weatherservice.dto.AgrometricalData
- */
+// зеркало AgrometricalData из weather-service
 public record WeatherForecastData(
         Double gtk,
         Double sumPrecipitation,
@@ -13,6 +10,7 @@ public record WeatherForecastData(
         String stressLevel,
         Double avgTemp,
         Integer extremeHeatDays,
-        Integer longestDryPeriod
+        Integer longestDryPeriod,
+        Double avgHumidity
 ) {}
 

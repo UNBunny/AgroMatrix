@@ -1,9 +1,6 @@
 package com.omstu.agriculturefield.disease.dto;
 
-/**
- * Агрегированные показатели прогноза за скользящее окно (7/14 дней).
- * Зеркалирует com.omstu.weatherservice.dto.ForecastWindowResponse
- */
+// зеркало ForecastWindowResponse из weather-service
 public record ForecastWindowData(
         Double tempMean7d,
         Double tempMax7d,
