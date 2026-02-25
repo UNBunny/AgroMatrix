@@ -6,20 +6,24 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.Data;
-import lombok.ToString;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+
 import org.locationtech.jts.geom.MultiPolygon;
 import org.locationtech.jts.geom.Polygon;
 
 
 @Entity
 @Table(name = "agricultural_fields")
-@Data
-@ToString
+@Getter
+@Setter
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class AgriculturalField {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     private String fieldName;
@@ -37,4 +41,8 @@ public class AgriculturalField {
 
     @Column(name = "area_hectares", columnDefinition = "NUMERIC(12,2)")
     private Double areaHectares;
+
+    private String regionCode; // Код региона для ML-модели (OMS, ALT и т.д.)
+
+    private String regionName; // Полное название региона (Омская область и т.д.)
 }

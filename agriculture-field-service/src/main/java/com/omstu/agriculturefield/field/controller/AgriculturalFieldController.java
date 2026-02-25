@@ -2,7 +2,7 @@ package com.omstu.agriculturefield.field.controller;
 
 import com.omstu.agriculturefield.field.dto.AgriculturalFieldRequest;
 import com.omstu.agriculturefield.field.dto.AgriculturalFieldResponse;
-import com.omstu.agriculturefield.field.service.impl.FieldServiceImpl;
+import com.omstu.agriculturefield.field.service.FieldService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -23,12 +24,12 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 public class AgriculturalFieldController {
-    private final FieldServiceImpl fieldService;
+    private final FieldService fieldService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public AgriculturalFieldResponse createField(
-            @RequestBody AgriculturalFieldRequest request
+            @Valid @RequestBody AgriculturalFieldRequest request
     ) {
         log.info("Agricultural field creation requested");
         return fieldService.createField(request);
@@ -50,7 +51,7 @@ public class AgriculturalFieldController {
     @ResponseStatus(HttpStatus.OK)
     public AgriculturalFieldResponse updateField(
             @PathVariable Long id,
-            @RequestBody AgriculturalFieldRequest request
+            @Valid @RequestBody AgriculturalFieldRequest request
     ) {
         log.info("Updating agricultural field with ID: {}", id);
         return fieldService.updateField(id, request);
