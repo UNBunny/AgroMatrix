@@ -19,10 +19,8 @@ public interface OpenMeteoMapper {
             throw new IllegalStateException("No successful responses received");
         }
 
-        // Берем первый ответ как базовый для координат
         OpenMeteoResponse first = responses.get(0);
 
-        // Комбинируем hourly и daily данные
         Hourly combinedHourly = HourlyMapper.INSTANCE.combineHourlyList(
                 responses.stream().map(OpenMeteoResponse::hourly).toList()
         );
@@ -41,11 +39,4 @@ public interface OpenMeteoMapper {
         );
     }
 
-    // Дополнительные методы если нужно
-    @Mapping(target = "latitude", source = "latitude")
-    @Mapping(target = "longitude", source = "longitude")
-    @Mapping(target = "elevation", source = "elevation")
-    @Mapping(target = "hourly", source = "hourly")
-    @Mapping(target = "daily", source = "daily")
-    OpenMeteoResponse mapResponse(OpenMeteoResponse response);
 }

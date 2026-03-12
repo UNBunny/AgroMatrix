@@ -10,10 +10,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
-/**
- * REST контроллер для работы с агрометеорологическими данными
- * Предоставляет эндпоинты для расчета агрометрик на основе исторических данных и прогнозов
- */
 @RestController
 @RequestMapping("/api/agro-data")
 @RequiredArgsConstructor
@@ -22,16 +18,6 @@ public class AgroMetricsController {
 
     private final AgroMetricsService agroMetricsService;
 
-    /**
-     * Получить агрометеорологические метрики за исторический период
-     * Рассчитывает ГТК, тепловой стресс и другие показатели на основе фактических данных
-     *
-     * @param lat       широта
-     * @param lon       долгота
-     * @param startDate начальная дата периода (формат: yyyy-MM-dd, не ранее 2016-01-01)
-     * @param endDate   конечная дата периода (формат: yyyy-MM-dd)
-     * @return агрометеорологические метрики
-     */
     @GetMapping("/metrics")
     public Mono<ResponseEntity<AgrometricalData>> getHistoricalMetrics(
             @RequestParam Double lat,
@@ -51,15 +37,6 @@ public class AgroMetricsController {
                 });
     }
 
-    /**
-     * Получить прогноз агрометеорологических метрик на будущий период
-     * Рассчитывает ожидаемые агрометрики на основе прогноза погоды
-     *
-     * @param lat  широта
-     * @param lon  долгота
-     * @param days количество дней прогноза (макс. 16)
-     * @return прогнозные агрометеорологические метрики
-     */
     @GetMapping("/forecast")
     public Mono<ResponseEntity<AgrometricalData>> getForecastMetrics(
             @RequestParam Double lat,
@@ -78,21 +55,6 @@ public class AgroMetricsController {
                 });
     }
 
-    /**
-     * Получить агрометрики для вегетационного периода следующего года
-     *
-     * ⚠️ ВАЖНО: Open-Meteo дает прогноз только на 16 дней вперед!
-     * Для планирования вегетационного периода (90-120 дней) используются
-     * ИСТОРИЧЕСКИЕ ДАННЫЕ за аналогичный период прошлого года как статистический референс.
-     *
-     * Например, для планирования посева в мае 2027 используются фактические данные за май-сентябрь 2025 года.
-     *
-     * @param lat           широта
-     * @param lon           долгота
-     * @param cropStartDate предполагаемая дата начала вегетации (формат: MM-dd, например: 05-15)
-     * @param durationDays  продолжительность вегетационного периода в днях
-     * @return агрометеорологические метрики на основе исторических данных прошлого года
-     */
     @GetMapping("/next-season")
     public Mono<ResponseEntity<AgrometricalData>> getNextSeasonMetrics(
             @RequestParam Double lat,
@@ -103,7 +65,6 @@ public class AgroMetricsController {
         log.info("Received next season agro metrics request: lat={}, lon={}, cropStart={}, duration={} days",
                 lat, lon, cropStartDate, durationDays);
 
-        // Используем один прошлый год
         return agroMetricsService.calculateAveragedMetrics(lat, lon, cropStartDate, durationDays, 1)
                 .map(ResponseEntity::ok)
                 .doOnSuccess(response -> log.info("Next season agro metrics request completed successfully"))
@@ -113,24 +74,6 @@ public class AgroMetricsController {
                 });
     }
 
-    /**
-     * Получить усредненные агрометрики за несколько лет для более точного прогноза
-     *
-     * Рассчитывает среднее значение агрометрик за указанное количество лет.
-     * Это более надежный подход, чем использование только одного прошлого года,
-     * так как сглаживает аномальные климатические годы.
-     *
-     * Например, для планирования посева в мае 2027:
-     * - Берутся данные за май-сентябрь 2022, 2023, 2024, 2025 (4 года)
-     * - Рассчитывается среднее ГТК, средние осадки, среднее количество дней стресса
-     *
-     * @param lat           широта
-     * @param lon           долгота
-     * @param cropStartDate предполагаемая дата начала вегетации (формат: MM-dd)
-     * @param durationDays  продолжительность вегетационного периода в днях
-     * @param yearsCount    количество лет для усреднения (по умолчанию 3, макс 5)
-     * @return усредненные агрометеорологические метрики
-     */
     @GetMapping("/next-season-average")
     public Mono<ResponseEntity<AgrometricalData>> getNextSeasonAverageMetrics(
             @RequestParam Double lat,
@@ -151,23 +94,6 @@ public class AgroMetricsController {
                 });
     }
 
-    /**
-     * Получить сезонные агрометрики для года урожая.
-     *
-     * Один запрос возвращает все важные периоды:
-     * - Октябрь-Март: накопленная влага (для озимых)
-     * - Апрель-Май: старт вегетации
-     * - Июнь-Июль: критический период (колошение, цветение)
-     * - Август-Сентябрь: созревание, уборка
-     * - Апрель-Сентябрь: полный вегетационный период
-     *
-     * Это оптимальный эндпоинт для ML-моделей: один запрос = все данные за год.
-     *
-     * @param lat  широта
-     * @param lon  долгота
-     * @param year год урожая (например, 2023). Минимум 2017 (нужны данные за осень предыдущего года)
-     * @return сезонные агрометеорологические метрики
-     */
     @GetMapping("/seasonal")
     public Mono<ResponseEntity<SeasonalAgrometricsResponse>> getSeasonalMetrics(
             @RequestParam Double lat,
@@ -185,9 +111,6 @@ public class AgroMetricsController {
                 });
     }
 
-    /**
-     * Обработчик ошибок валидации
-     */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<String> handleValidationException(IllegalArgumentException e) {
         log.warn("Validation error: {}", e.getMessage());

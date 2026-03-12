@@ -21,7 +21,7 @@ public class WeatherApiProperties {
     private int maxInMemorySize;
 
     // Минимальная дата для исторических данных (API ограничение)
-    private LocalDate minHistoricalDate = LocalDate.of(2016, 1, 1);
+    private LocalDate minHistoricalDate = LocalDate.of(1990, 1, 1);
 
     // Максимальная дата для исторических данных (текущая дата - 5 дней)
     private int historicalDataLagDays;
