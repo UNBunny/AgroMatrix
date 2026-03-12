@@ -19,10 +19,6 @@ import reactor.core.publisher.Mono;
 import java.time.LocalDate;
 import java.util.List;
 
-/**
- * Сервис для получения погодных данных из Open-Meteo API
- * Использует разные эндпоинты для прогнозов и исторических данных
- */
 @Service
 @Slf4j
 public class OpenMeteoService implements ExternalFieldService {
@@ -71,9 +67,6 @@ public class OpenMeteoService implements ExternalFieldService {
         }
     }
 
-    /**
-     * Получает прогноз погоды на указанное количество дней
-     */
     private Mono<OpenMeteoResponse> getForecastWeather(Double lat, Double lon, Integer days) {
         dateValidator.validateForecastDays(days);
 
@@ -83,10 +76,6 @@ public class OpenMeteoService implements ExternalFieldService {
         return executeStrategy(strategy, forecastWebClient, lat, lon);
     }
 
-    /**
-     * Получает исторические данные за указанный период
-     * Для длинных периодов автоматически разбивает на несколько запросов
-     */
     private Mono<OpenMeteoResponse> getHistoricalWeather(
             Double lat, Double lon, String startDate, String endDate
     ) {
@@ -108,10 +97,6 @@ public class OpenMeteoService implements ExternalFieldService {
         return executeStrategy(strategy, historicalWebClient, lat, lon);
     }
 
-    /**
-     * Разбивает длинный период на несколько запросов по 3 месяца
-     * Это оптимизирует размер ответа и снижает нагрузку на API
-     */
     private Mono<OpenMeteoResponse> getHistoricalDataInChunks(
             Double lat, Double lon, LocalDate start, LocalDate end
     ) {
@@ -142,9 +127,6 @@ public class OpenMeteoService implements ExternalFieldService {
                                 ranges.size(), lat, lon));
     }
 
-    /**
-     * Выполняет запрос с использованием стратегии
-     */
     private Mono<OpenMeteoResponse> executeStrategy(
             WeatherRequestStrategy strategy, WebClient webClient, Double lat, Double lon
     ) {

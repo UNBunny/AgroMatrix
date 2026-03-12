@@ -8,9 +8,6 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 
-/**
- * Валидатор дат для запросов к погодному API
- */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -18,13 +15,6 @@ public class DateValidator {
 
     private final WeatherApiProperties properties;
 
-    /**
-     * Валидирует период для исторических данных
-     *
-     * @param startDate начальная дата в формате ISO (yyyy-MM-dd)
-     * @param endDate   конечная дата в формате ISO (yyyy-MM-dd)
-     * @throws IllegalArgumentException если даты некорректны
-     */
     public void validateHistoricalPeriod(String startDate, String endDate) {
         if (startDate == null || endDate == null) {
             log.error("Dates cannot be null: startDate={}, endDate={}", startDate, endDate);
@@ -46,12 +36,6 @@ public class DateValidator {
         validateHistoricalDateBounds(start, end);
     }
 
-    /**
-     * Валидирует количество дней для прогноза
-     *
-     * @param days количество дней
-     * @throws IllegalArgumentException если количество дней некорректно
-     */
     public void validateForecastDays(Integer days) {
         if (days == null || days <= 0) {
             log.error("Invalid forecast days: {}", days);
@@ -64,13 +48,6 @@ public class DateValidator {
         }
     }
 
-    /**
-     * Валидирует координаты
-     *
-     * @param lat широта
-     * @param lon долгота
-     * @throws IllegalArgumentException если координаты некорректны
-     */
     public void validateCoordinates(Double lat, Double lon) {
         if (lat == null || lon == null) {
             log.error("Coordinates cannot be null: lat={}, lon={}", lat, lon);

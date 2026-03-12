@@ -9,9 +9,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
-/**
- * REST контроллер для работы с погодными данными Open-Meteo
- */
 @RestController
 @RequestMapping("/api/open-meteo")
 @RequiredArgsConstructor
@@ -20,14 +17,6 @@ public class OpenMeteoController {
 
     private final OpenMeteoService openMeteoService;
 
-    /**
-     * Получить прогноз погоды на указанное количество дней
-     *
-     * @param lat  широта
-     * @param lon  долгота
-     * @param days количество дней прогноза (макс. 16)
-     * @return прогноз погоды
-     */
     @GetMapping("/ml")
     public Mono<ResponseEntity<OpenMeteoResponse>> getForecast(
             @RequestParam Double lat,
@@ -45,16 +34,6 @@ public class OpenMeteoController {
                 });
     }
 
-    /**
-     * Получить исторические данные за указанный период
-     * Возвращает только дневные агрегаты
-     *
-     * @param lat       широта
-     * @param lon       долгота
-     * @param startDate начальная дата в формате yyyy-MM-dd (не ранее 2016-01-01)
-     * @param endDate   конечная дата в формате yyyy-MM-dd
-     * @return исторические данные
-     */
     @GetMapping("/ml/historic-data")
     public Mono<ResponseEntity<OpenMeteoResponse>> getHistoricalData(
             @RequestParam Double lat,
@@ -74,9 +53,6 @@ public class OpenMeteoController {
                 });
     }
 
-    /**
-     * Обработчик ошибок валидации
-     */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<String> handleValidationException(IllegalArgumentException e) {
         log.warn("Validation error: {}", e.getMessage());
