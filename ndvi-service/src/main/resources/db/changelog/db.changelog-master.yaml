@@ -1,0 +1,8 @@
+databaseChangeLog:
+  - changeSet:
+      id: ndvi-1
+      author: nikita
+      changes:
+        - sqlFile:
+            path: changes/V_001_create_ndvi_records.sql
+            relativeToChangelogFile: true
