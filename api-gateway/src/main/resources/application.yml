@@ -5,22 +5,85 @@ spring:
   application:
     name: api-gateway
   cloud:
+    inetutils:
+      ignored-interfaces:
+        - tun* # Обычный префикс для VPN (Tunnel)
+        - utun* # Для macOS
+        - tap* # Для OpenVPN
+        - vbe* # VirtualBox
+        - virtual* # Прочие виртуальные интерфейсы
     gateway:
-      discovery:
-        locator:
-          enabled: true  # ???????? ?????????????? ??????????? ????????
-          lower-case-service-id: true
-      routes:
-        - id: agriculture-field-service
-          uri: lb://agriculture-field-service  # ? ?????? ????????
-          predicates:
-            - Path=/api/fields/**
+      server:
+        webflux:
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowedOriginPatterns:
+                  - "http://localhost:5173"
+                  - "http://localhost:5174"
+                  - "http://localhost:5175"
+                  - "http://localhost:3000"
+                allowedMethods:
+                  - GET
+                  - POST
+                  - PUT
+                  - DELETE
+                  - OPTIONS
+                allowedHeaders:
+                  - "*"
+                exposedHeaders:
+                  - Authorization
+                  - Content-Type
+                  - Content-Disposition
+                allowCredentials: true
+                maxAge: 3600
+          discovery:
+            locator:
+              enabled: true
+              lower-case-service-id: true
+          routes:
+            - id: agriculture-field-service
+              uri: lb://agriculture-field-service
+              predicates:
+                - Path=/api/fields/**,/api/crop-type/**,/api/crop-variety/**,/api/crop-histories/**,/api/diseases/**,/api/disease-resistances/**,/api/crop-rotation/**,/api/disease-product-recommendations/**,/api/fertilizer-applications/**,/api/plant-protection/**,/api/phenological-observations/**
+              filters:
+                - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+
+            - id: ndvi-service
+              uri: lb://ndvi-service
+              predicates:
+                - Path=/api/ndvi/**
+              filters:
+                - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+
+            - id: weather-service
+              uri: lb://weather-service
+              predicates:
+                - Path=/api/open-meteo/**,/api/agro-data/**
+              filters:
+                - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+
+            - id: ml-service-api
+              uri: ${ML_SERVICE_URL:http://localhost:8090}
+              predicates:
+                - Path=/api/yield/**,/api/price/**,/api/crop/recommend,/api/fertilizer/**,/api/pesticide/**,/api/disease/**
+              filters:
+                - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+
+            - id: ml-service-health
+              uri: ${ML_SERVICE_URL:http://localhost:8090}
+              predicates:
+                - Path=/ml/health
+              filters:
+                - RewritePath=/ml/health, /health
+                - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
 
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
     register-with-eureka: true
     fetch-registry: true
   instance:
     prefer-ip-address: true
+    ip-address: 127.0.0.1
