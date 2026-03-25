@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState } from "react"
 
 interface FieldFormProps {
   onCreateField: (name: string, cropType: string, status: string) => void
@@ -33,15 +33,7 @@ function FieldForm({
 }: FieldFormProps) {
   const [fieldName, setFieldName] = useState("")
   const [cropType, setCropType] = useState("")
-  const [status, setStatus] = useState("Активное")
-
-  useEffect(() => {
-    console.log("FieldForm монтирован", { hasPolygon, isDrawing });
-  }, []);
-
-  useEffect(() => {
-    console.log("FieldForm обновлен", { hasPolygon, isDrawing, loading, currentArea });
-  }, [hasPolygon, isDrawing, loading, currentArea]);
+  const [status, setStatus] = useState("ACTIVE")
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -52,13 +44,13 @@ function FieldForm({
     }
     
     onCreateField(
-      fieldName.trim(), 
-      cropType.trim() || "Не указана", 
-      status.trim() || "Активное"
+      fieldName.trim(),
+      cropType.trim() || "Не указана",
+      status.trim() || "ACTIVE"
     )
     setFieldName("")
     setCropType("")
-    setStatus("Активное")
+    setStatus("ACTIVE")
   }
 
   const getStatusMessage = () => {
@@ -92,7 +84,6 @@ function FieldForm({
 
       {isDrawing && (
         <div className="drawing-controls">
-          {/* Отображение текущей площади */}
           {currentArea > 0 && (
             <div style={{ padding: "0.75rem", backgroundColor: "#e8f5e8", borderRadius: "6px", marginBottom: "1rem", border: "1px solid #c3e6cb" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
@@ -203,13 +194,13 @@ function FieldForm({
                   onChange={(e) => setStatus(e.target.value)}
                   disabled={loading}
                 >
-                  <option value="Активное">Активное</option>
-                  <option value="Неактивное">Неактивное</option>
-                  <option value="Под паром">Под паром</option>
-                  <option value="На обработке">На обработке</option>
+                  <option value="ACTIVE">Активное</option>
+                  <option value="INACTIVE">Неактивное</option>
+                  <option value="FALLOW">Под паром</option>
+                  <option value="PENDING">На обработке</option>
                 </select>
               </div>
-              
+
               <div style={{ padding: "0.75rem", backgroundColor: "#f8f9fa", borderRadius: "6px", marginBottom: "1rem" }}>
                 <p style={{ margin: 0, fontSize: "0.9rem", color: "#6c757d", textAlign: "center" }}>
                   📏 Площадь будет вычислена автоматически
