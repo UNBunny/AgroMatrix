@@ -35,6 +35,7 @@ body {
   display: flex;
   flex: 1;
   overflow: hidden;
+  position: relative;
 }
 
 .sidebar {
@@ -182,6 +183,24 @@ body {
   font-size: 0.9rem;
   color: #2c3e50;
   max-width: 250px;
+  border-left: 4px solid #3498db;
+}
+
+.drawing-instructions strong {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #e67e22;
+  font-size: 1rem;
+}
+
+.drawing-instructions .step-counter {
+  background: #3498db;
+  color: white;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+  display: inline-block;
 }
 
 .error-message {
@@ -454,4 +473,71 @@ body {
     border-color: #e67e22;
     opacity: 1;
   }
+}
+
+/* ─── NDVI Layout ──────────────────────────────────────────── */
+.map-with-ndvi {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 10px;
+  align-items: flex-start;
+}
+
+.map-with-ndvi .map-container {
+  flex: 1;
+  min-height: 420px;
+  height: 420px;
+}
+
+.ndvi-side-panel {
+  width: 320px;
+  flex-shrink: 0;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.ndvi-hint {
+  text-align: center;
+  color: #888;
+  font-size: 0.82rem;
+  margin-bottom: 8px;
+  padding: 6px;
+  background: #f9fbe7;
+  border-radius: 6px;
+  border: 1px dashed #c5e1a5;
+}
+
+/* ─── NDVI Float Panel (в App.tsx layout) ─────────────────── */
+.ndvi-float-panel {
+  position: absolute;
+  top: 70px;
+  right: 12px;
+  width: 310px;
+  z-index: 1001;
+  max-height: calc(100vh - 90px);
+  overflow-y: auto;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+  animation: ndviSlideIn 0.2s ease-out;
+}
+
+@keyframes ndviSlideIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.ndvi-map-hint {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.92);
+  color: #2e7d32;
+  font-size: 0.82rem;
+  padding: 6px 16px;
+  border-radius: 20px;
+  border: 1px dashed #a5d6a7;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  z-index: 1000;
+  pointer-events: none;
 }

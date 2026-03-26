@@ -1,21 +1,31 @@
-import { useRef } from 'react'
-import { MapContainer, TileLayer, Polygon, useMapEvents, Polyline, Marker } from 'react-leaflet'
+import { useRef, useEffect } from 'react'
+import { MapContainer, TileLayer, Polygon, useMapEvents, Polyline, Marker, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { Field } from '../types/Field'
+import { getNdviColor } from '../services/ndviService'
 
 interface FieldMapProps {
   fields: Field[]
   isDrawing: boolean
   currentPolygon: number[][]
   onPolygonUpdate: (coordinates: number[][]) => void
-  currentHoles?: number[][][]  // массив дырок в поле
+  currentHoles?: number[][][]
   onHolesUpdate?: (holes: number[][][]) => void
   isCreatingHole?: boolean
   currentHole?: number[][]
   onHoleUpdate?: (hole: number[][]) => void
+  /** fieldId → ndviMean: для цветовой индикации по NDVI */
+  ndviColors?: Record<number, number | null>
+  /** Callback при клике на поле */
+  onFieldClick?: (field: Field) => void
+  /** Выбранное поле — карта автоматически зумится на него */
+  selectedField?: Field | null
+  /** Начальный центр карты [lat, lng] */
+  initialCenter?: [number, number]
+  /** Начальный зум */
+  initialZoom?: number
 }
 
-// Простой компонент для редактируемой точки
 function EditablePoint({ position, index, onDrag, onDelete, color = '#3498db', size = 8, isDeletable = true }: {
   position: [number, number]
   index: number
@@ -38,7 +48,7 @@ function EditablePoint({ position, index, onDrag, onDelete, color = '#3498db', s
     html: `<div style="background: #e74c3c; color: white; width: 14px; height: 14px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: bold; cursor: pointer; border: 1px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3);">×</div>`,
     className: 'delete-marker',
     iconSize: [14, 14],
-    iconAnchor: [-2, -2]  // Смещаем крестик в верхний правый угол
+    iconAnchor: [-2, -2]
   })
 
   return (
@@ -48,7 +58,7 @@ function EditablePoint({ position, index, onDrag, onDelete, color = '#3498db', s
         position={position}
         icon={icon}
         draggable={true}
-        zIndexOffset={500}  // Основной маркер имеет меньший z-index
+        zIndexOffset={500}
         eventHandlers={{
           dragend: (e) => {
             const marker = e.target
@@ -78,15 +88,13 @@ function EditablePoint({ position, index, onDrag, onDelete, color = '#3498db', s
               e.originalEvent?.stopPropagation()
             }
           }}
-          // Устанавливаем более высокий z-index для крестика
-          zIndexOffset={1000}
+              zIndexOffset={1000}
         />
       )}
     </>
   )
 }
 
-// Компонент для обработки кликов на карте
 function DrawingHandler({ isDrawing, currentPolygon, onPolygonUpdate, isCreatingHole, currentHole, onHoleUpdate }: {
   isDrawing: boolean
   currentPolygon: number[][]
@@ -99,11 +107,11 @@ function DrawingHandler({ isDrawing, currentPolygon, onPolygonUpdate, isCreating
     click: (e) => {
       if (isDrawing && !isCreatingHole) {
         const { lat, lng } = e.latlng
-        const newPoint = [lng, lat] // GeoJSON format: [longitude, latitude]
+        const newPoint = [lng, lat]
         onPolygonUpdate([...currentPolygon, newPoint])
       } else if (isCreatingHole && onHoleUpdate && currentHole) {
         const { lat, lng } = e.latlng
-        const newPoint = [lng, lat] // GeoJSON format: [longitude, latitude]
+        const newPoint = [lng, lat]
         onHoleUpdate([...currentHole, newPoint])
       }
     }
@@ -112,43 +120,47 @@ function DrawingHandler({ isDrawing, currentPolygon, onPolygonUpdate, isCreating
   return null
 }
 
-// Конвертация координат для отображения
 function getPolygonPositions(coordinates: number[][]): [number, number][] {
-  return coordinates.map(coord => [coord[1], coord[0]]) // Leaflet format: [latitude, longitude]
+  return coordinates.map(coord => [coord[1], coord[0]])
 }
 
-// Функция для расчета площади полигона в гектарах
 function calculatePolygonArea(coordinates: number[][]): number {
   if (coordinates.length < 3) return 0
 
-  // Используем формулу для сферических координат (более точно для географических данных)
-  const earthRadius = 6371000 // радиус Земли в метрах
+  const earthRadius = 6371000
   let area = 0
 
   for (let i = 0; i < coordinates.length; i++) {
     const j = (i + 1) % coordinates.length
-    const lat1 = coordinates[i][1] * Math.PI / 180 // широта в радианах
+    const lat1 = coordinates[i][1] * Math.PI / 180
     const lat2 = coordinates[j][1] * Math.PI / 180
-    const deltaLon = (coordinates[j][0] - coordinates[i][0]) * Math.PI / 180 // долгота в радианах
+    const deltaLon = (coordinates[j][0] - coordinates[i][0]) * Math.PI / 180
     
     area += deltaLon * (2 + Math.sin(lat1) + Math.sin(lat2))
   }
 
   area = Math.abs(area * earthRadius * earthRadius / 2)
-  
-  // Переводим в гектары (1 гектар = 10,000 м²)
   return area / 10000
 }
 
-// Функция для расчета общей площади поля с учетом отверстий
 export function calculateFieldArea(mainPolygon: number[][], holes: number[][][] = []): number {
   const mainArea = calculatePolygonArea(mainPolygon)
   const holesArea = holes.reduce((sum, hole) => sum + calculatePolygonArea(hole), 0)
-  
-  return Math.max(0, mainArea - holesArea) // площадь не может быть отрицательной
+  return Math.max(0, mainArea - holesArea)
 }
 
-export function FieldMap({ 
+function FlyToField({ field }: { field: Field | null | undefined }) {
+  const map = useMap()
+  useEffect(() => {
+    if (!field || !field.coordinates || field.coordinates.length === 0) return
+    const latLngs = field.coordinates.map(c => L.latLng(c[1], c[0]))
+    const bounds = L.latLngBounds(latLngs)
+    map.flyToBounds(bounds, { padding: [50, 50], maxZoom: 16, duration: 0.8 })
+  }, [field?.id, map])
+  return null
+}
+
+export function FieldMap({
   fields, 
   isDrawing, 
   currentPolygon, 
@@ -157,34 +169,37 @@ export function FieldMap({
   onHolesUpdate,
   isCreatingHole = false,
   currentHole = [],
-  onHoleUpdate
+  onHoleUpdate,
+  ndviColors,
+  onFieldClick,
+  selectedField,
+  initialCenter = [54.9924, 73.3686],
+  initialZoom = 10,
 }: FieldMapProps) {
 
-  // Обработчики для редактирования основного полигона
   const handleMainPolygonDrag = (index: number, newPosition: [number, number]) => {
     const newPolygon = [...currentPolygon]
-    newPolygon[index] = [newPosition[1], newPosition[0]] // Convert back to GeoJSON
+    newPolygon[index] = [newPosition[1], newPosition[0]]
     onPolygonUpdate(newPolygon)
   }
 
   const handleMainPolygonDelete = (index: number) => {
-    if (currentPolygon.length > 3) { // Минимум 3 точки для полигона
+    if (currentPolygon.length > 3) {
       const newPolygon = currentPolygon.filter((_, i) => i !== index)
       onPolygonUpdate(newPolygon)
     }
   }
 
-  // Обработчики для редактирования дырок
   const handleHoleDrag = (index: number, newPosition: [number, number]) => {
     if (onHoleUpdate) {
       const newHole = [...currentHole]
-      newHole[index] = [newPosition[1], newPosition[0]] // Convert back to GeoJSON
+      newHole[index] = [newPosition[1], newPosition[0]]
       onHoleUpdate(newHole)
     }
   }
 
   const handleHoleDelete = (index: number) => {
-    if (onHoleUpdate && currentHole.length > 3) { // Минимум 3 точки для полигона
+    if (onHoleUpdate && currentHole.length > 3) {
       const newHole = currentHole.filter((_, i) => i !== index)
       onHoleUpdate(newHole)
     }
@@ -192,27 +207,16 @@ export function FieldMap({
 
   return (
     <MapContainer
-      center={[54.9924, 73.3686]} // Омск
-      zoom={10}
+      center={initialCenter}
+      zoom={initialZoom}
       style={{ height: '100%', width: '100%' }}
     >
-      {/* Гибридная карта Google Satellite с подписями */}
       <TileLayer
         url="https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
         attribution="&copy; Google Satellite"
         maxZoom={20}
       />
-      
-      {/* Альтернатива - можно переключать слои */}
-      {/* 
-      <TileLayer
-        url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-        attribution="&copy; Esri World Imagery"
-        maxZoom={19}
-      />
-      */}
 
-      {/* Обработчик кликов для рисования */}
       <DrawingHandler
         isDrawing={isDrawing}
         currentPolygon={currentPolygon}
@@ -222,63 +226,80 @@ export function FieldMap({
         onHoleUpdate={onHoleUpdate}
       />
 
-        {/* Существующие поля с дырками */}
-        {fields.map((field) => {
-            // Преобразуем координаты основного полигона для Leaflet
-            const mainPolygonCoords = getPolygonPositions(field.coordinates);
+      <FlyToField field={selectedField} />
 
-            // Если у поля есть дырки
+        {fields.map((field) => {
+            const mainPolygonCoords = getPolygonPositions(field.coordinates);
+            const ndviValue = ndviColors ? ndviColors[field.id] : undefined
+            const fillColor = ndviValue !== undefined && ndviValue !== null
+              ? getNdviColor(ndviValue)
+              : '#27ae60'
+            const eventHandlers = onFieldClick
+              ? { click: () => onFieldClick(field) }
+              : {}
+
             if (field.holes && field.holes.length > 0) {
-                // Создаем массив, где первый элемент - основной полигон, остальные - дырки
                 const allPolygons = [
                     mainPolygonCoords,
                     ...field.holes.map(hole => getPolygonPositions(hole))
                 ];
-
                 return (
                     <Polygon
                         key={field.id}
                         positions={allPolygons}
                         pathOptions={{
-                            fillColor: '#27ae60',
-                            fillOpacity: 0.3,
-                            color: '#27ae60',
+                            fillColor,
+                            fillOpacity: 0.45,
+                            color: fillColor,
                             weight: 2
                         }}
+                        eventHandlers={eventHandlers}
                     />
                 );
             } else {
-                // Если дырок нет, просто отображаем основной полигон
                 return (
                     <Polygon
                         key={field.id}
                         positions={mainPolygonCoords}
                         pathOptions={{
-                            fillColor: '#27ae60',
-                            fillOpacity: 0.3,
-                            color: '#27ae60',
+                            fillColor,
+                            fillOpacity: 0.45,
+                            color: fillColor,
                             weight: 2
                         }}
+                        eventHandlers={eventHandlers}
                     />
                 );
             }
         })}
 
-      {/* Предварительный полигон основного поля */}
-      {currentPolygon.length >= 3 && (
-        <Polygon
-          positions={getPolygonPositions(currentPolygon)}
-          pathOptions={{
-            fillColor: isCreatingHole ? '#3498db' : '#3498db',
-            fillOpacity: isCreatingHole ? 0.1 : 0.2,
-            color: '#3498db',
-            weight: 3,
-            dashArray: isCreatingHole ? '5, 15' : '10, 10'
-          }}
-        />
-      )}
-      
-      {/* Редактируемые точки основного полигона - показываем всегда когда есть точки */}
+      {currentPolygon.length >= 3 && (() => {
+        if (!isDrawing && !isCreatingHole && currentHoles.length > 0) {
+          const positions = [
+            getPolygonPositions(currentPolygon),
+            ...currentHoles.map(h => getPolygonPositions(h)),
+          ] as [number, number][][]
+          return (
+            <Polygon
+              positions={positions}
+              pathOptions={{ fillColor: '#3498db', fillOpacity: 0.35, color: '#3498db', weight: 3 }}
+            />
+          )
+        }
+        return (
+          <Polygon
+            positions={getPolygonPositions(currentPolygon)}
+            pathOptions={{
+              fillColor: '#3498db',
+              fillOpacity: isCreatingHole ? 0.1 : 0.2,
+              color: '#3498db',
+              weight: 3,
+              dashArray: isCreatingHole ? '5, 15' : '10, 10'
+            }}
+          />
+        )
+      })()}
+
       {currentPolygon.length > 0 && !isCreatingHole && currentPolygon.map((coord, index) => (
         <EditablePoint
           key={`main-${index}`}
@@ -292,8 +313,7 @@ export function FieldMap({
         />
       ))}
 
-      {/* Существующие дырки */}
-      {currentHoles.map((hole, holeIndex) => (
+      {(isDrawing || isCreatingHole) && currentHoles.map((hole, holeIndex) => (
         <Polygon
           key={`hole-${holeIndex}`}
           positions={getPolygonPositions(hole)}
@@ -306,7 +326,6 @@ export function FieldMap({
         />
       ))}
 
-      {/* Текущая редактируемая дырка - полигон показываем только когда точек >= 3 */}
       {isCreatingHole && currentHole.length >= 3 && (
         <Polygon
           positions={getPolygonPositions(currentHole)}
@@ -320,7 +339,6 @@ export function FieldMap({
         />
       )}
       
-      {/* Редактируемые точки дырки - показываем сразу с первой точки */}
       {isCreatingHole && currentHole.length > 0 && currentHole.map((coord, index) => (
         <EditablePoint
           key={`hole-${index}`}
@@ -334,7 +352,6 @@ export function FieldMap({
         />
       ))}
 
-      {/* Линии между точками для текущего полигона */}
       {isDrawing && !isCreatingHole && currentPolygon.length > 1 && (
         <Polyline
           positions={getPolygonPositions(currentPolygon)}
@@ -346,7 +363,6 @@ export function FieldMap({
         />
       )}
 
-      {/* Линии между точками для текущей дырки */}
       {isCreatingHole && currentHole.length > 1 && (
         <Polyline
           positions={getPolygonPositions(currentHole)}

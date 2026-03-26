@@ -1,4 +1,5 @@
 import { Field } from '../types/Field'
+import { getFieldStatusLabel } from '../utils/fieldUtils'
 
 interface FieldListProps {
   fields: Field[]
@@ -42,7 +43,7 @@ function FieldList({ fields, loading }: FieldListProps) {
           <div className="field-details">
             🌱 Культура: {field.crop_type || 'Не указана'}
             <br />
-            📊 Статус: {field.status || 'Не указан'}
+            📊 Статус: {getFieldStatusLabel(field.status)}
             <br />
             📏 Площадь: {field.areaHectares} га
             <br />

@@ -31,3 +31,15 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Python ###
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+### Analytics (data pipeline — not part of the deployed system) ###
+analytics/
+
+### TEST notebooks ###
+TEST/
