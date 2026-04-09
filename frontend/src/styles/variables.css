@@ -1,0 +1,66 @@
+/* ===== CSS Custom Properties — AgroPlanPro Design System ===== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* Цвета */
+  --color-primary: #2d7a45;
+  --color-primary-hover: #236137;
+  --color-primary-light: #e8f5ed;
+  --color-primary-medium: #c3e6cc;
+  --color-accent: #5ba85a;
+
+  --color-warning: #e8a020;
+  --color-warning-light: #fef3e2;
+  --color-danger: #d63031;
+  --color-danger-light: #fdeaea;
+  --color-info: #2980b9;
+  --color-info-light: #e8f4fb;
+  --color-success: #27ae60;
+  --color-success-light: #e8f8f0;
+
+  --color-surface: #ffffff;
+  --color-bg: #f4f7f5;
+  --color-bg-secondary: #eef2ef;
+  --color-border: #dde8e1;
+  --color-border-hover: #b8d4be;
+
+  --color-text: #1e2d26;
+  --color-text-secondary: #3d5a44;
+  --color-text-muted: #6b8578;
+  --color-text-placeholder: #a0b8a8;
+
+  /* NDVI цвета */
+  --ndvi-critical: #c0392b;
+  --ndvi-low: #e67e22;
+  --ndvi-moderate: #f1c40f;
+  --ndvi-good: #2ecc71;
+  --ndvi-excellent: #1a7a3c;
+
+  /* Layout */
+  --sidebar-width: 260px;
+  --sidebar-collapsed: 72px;
+  --topbar-height: 60px;
+  --border-radius-sm: 4px;
+  --border-radius: 8px;
+  --border-radius-lg: 12px;
+  --border-radius-xl: 16px;
+
+  /* Тени */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.16);
+
+  /* Переходы */
+  --transition: 0.2s ease;
+  --transition-slow: 0.35s ease;
+
+  /* Z-index */
+  --z-sidebar: 1200;
+  --z-topbar: 1100;
+  --z-drawer: 1300;
+  --z-modal: 1400;
+  --z-tooltip: 1500;
+  --z-map-overlay: 1000;
+}
+
