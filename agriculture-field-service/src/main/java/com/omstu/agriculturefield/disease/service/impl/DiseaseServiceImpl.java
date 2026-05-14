@@ -1,5 +1,8 @@
 package com.omstu.agriculturefield.disease.service.impl;
 
+import com.omstu.agriculturefield.common.exception.ConflictException;
+import com.omstu.agriculturefield.common.exception.NotFoundException;
+import com.omstu.agriculturefield.common.exception.ValidationException;
 import com.omstu.agriculturefield.common.service.BaseService;
 import com.omstu.agriculturefield.crop.model.CropType;
 import com.omstu.agriculturefield.crop.repository.CropTypeRepository;
@@ -40,14 +43,16 @@ public class DiseaseServiceImpl implements BaseService<DiseaseRequest, DiseaseRe
     public DiseaseResponse getById(Long id) {
         return diseaseRepository.findById(id)
                 .map(diseaseMapper::toResponse)
-                .orElseThrow(() -> new RuntimeException("Disease not found with id: " + id));
+                .orElseThrow(() -> new NotFoundException("Disease not found with id: " + id));
     }
 
     @Override
     @Transactional
     public DiseaseResponse create(DiseaseRequest request) {
+        validateDiseaseRequest(request, null);
+
         Disease disease = diseaseMapper.toEntity(request);
-        
+
         // Устанавливаем affectedCrops из списка ID
         if (request.affectedCropIds() != null && !request.affectedCropIds().isEmpty()) {
             Set<CropType> affectedCrops = new HashSet<>(
@@ -57,18 +62,39 @@ public class DiseaseServiceImpl implements BaseService<DiseaseRequest, DiseaseRe
         } else {
             disease.setAffectedCrops(new HashSet<>());
         }
-        
+
         Disease savedDisease = diseaseRepository.save(disease);
         log.info("Created disease with id: {}", savedDisease.getId());
         return diseaseMapper.toResponse(savedDisease);
+    }
+
+    private void validateDiseaseRequest(DiseaseRequest request, Long existingId) {
+        // Validate commonName
+        if (request.commonName() == null || request.commonName().trim().isEmpty()) {
+            throw new ValidationException("Common name cannot be empty");
+        }
+
+        // Validate scientificName uniqueness
+        if (request.scientificName() != null && !request.scientificName().trim().isEmpty()) {
+            if (existingId == null) {
+                if (diseaseRepository.existsByScientificName(request.scientificName())) {
+                    throw new ConflictException("Disease with scientific name '" + request.scientificName() + "' already exists");
+                }
+            } else {
+                if (diseaseRepository.existsByScientificNameAndIdNot(request.scientificName(), existingId)) {
+                    throw new ConflictException("Disease with scientific name '" + request.scientificName() + "' already exists");
+                }
+            }
+        }
     }
 
     @Override
     @Transactional
     public DiseaseResponse update(Long id, DiseaseRequest request) {
         Disease existingDisease = diseaseRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Disease not found with id: " + id));
-        
+                .orElseThrow(() -> new NotFoundException("Disease not found with id: " + id));
+        validateDiseaseRequest(request, id);
+
         // Обновляем поля
         existingDisease.setScientificName(request.scientificName());
         existingDisease.setCommonName(request.commonName());
@@ -81,7 +107,7 @@ public class DiseaseServiceImpl implements BaseService<DiseaseRequest, DiseaseRe
         existingDisease.setFavorableConditions(request.favorableConditions());
         existingDisease.setImageUrl(request.imageUrl());
         existingDisease.setIsActive(request.isActive() != null ? request.isActive() : true);
-        
+
         // Обновляем affectedCrops
         if (request.affectedCropIds() != null) {
             Set<CropType> affectedCrops = new HashSet<>(
@@ -91,7 +117,7 @@ public class DiseaseServiceImpl implements BaseService<DiseaseRequest, DiseaseRe
         } else {
             existingDisease.setAffectedCrops(new HashSet<>());
         }
-        
+
         Disease updatedDisease = diseaseRepository.save(existingDisease);
         log.info("Updated disease with id: {}", updatedDisease.getId());
         return diseaseMapper.toResponse(updatedDisease);
@@ -101,7 +127,13 @@ public class DiseaseServiceImpl implements BaseService<DiseaseRequest, DiseaseRe
     @Transactional
     public void delete(Long id) {
         Disease disease = diseaseRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Disease not found with id: " + id));
+                .orElseThrow(() -> new NotFoundException("Disease not found with id: " + id));
+
+        // Check if disease has related resistances
+        if (diseaseRepository.hasDiseaseResistances(id)) {
+            throw new ConflictException("Cannot delete disease with id: " + id + " because it has related disease resistances");
+        }
+
         diseaseRepository.delete(disease);
         log.info("Deleted disease with id: {}", id);
     }

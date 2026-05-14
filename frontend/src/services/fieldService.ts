@@ -1,14 +1,5 @@
-import axios from 'axios'
 import { Field, FieldCreateRequest } from '../types/Field'
-
-const API_BASE_URL = 'http://localhost:8080/api'
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-})
+import { api } from './api'
 
 export const fieldService = {
   async getAllFields(): Promise<Field[]> {
@@ -16,8 +7,22 @@ export const fieldService = {
     return response.data
   },
 
+  async getFieldById(id: number): Promise<Field> {
+    const response = await api.get<Field>(`/fields/${id}`)
+    return response.data
+  },
+
   async createField(field: FieldCreateRequest): Promise<Field> {
     const response = await api.post<Field>('/fields', field)
     return response.data
+  },
+
+  async updateField(id: number, field: FieldCreateRequest): Promise<Field> {
+    const response = await api.put<Field>(`/fields/${id}`, field)
+    return response.data
+  },
+
+  async deleteField(id: number): Promise<void> {
+    await api.delete(`/fields/${id}`)
   },
 }

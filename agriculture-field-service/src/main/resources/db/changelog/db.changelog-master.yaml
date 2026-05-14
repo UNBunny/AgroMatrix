@@ -4,7 +4,7 @@ databaseChangeLog:
       author: nikita
       changes:
         - sqlFile:
-            path: changes/V_001_initial_field.sql
+            path: changes/V_001_schema.sql
             relativeToChangelogFile: true
 
   - changeSet:
@@ -12,7 +12,7 @@ databaseChangeLog:
       author: nikita
       changes:
         - sqlFile:
-            path: changes/V_002_create_all_tables.sql
+            path: changes/V_002_crop_types.sql
             relativeToChangelogFile: true
 
   - changeSet:
@@ -24,17 +24,65 @@ databaseChangeLog:
             relativeToChangelogFile: true
 
   - changeSet:
-      id: 2a
+      id: 4
       author: nikita
       changes:
         - sqlFile:
-            path: changes/V_002_insert_test_data.sql
+            path: changes/V_004_diseases.sql
             relativeToChangelogFile: true
 
   - changeSet:
-      id: 3a
+      id: 5
       author: nikita
       changes:
         - sqlFile:
-            path: changes/V_003_insert_rotation_rules.sql
+            path: changes/V_005_crop_varieties.sql
+            relativeToChangelogFile: true
+
+  - changeSet:
+      id: 6
+      author: nikita
+      changes:
+        - sqlFile:
+            path: changes/V_006_crop_history.sql
+            relativeToChangelogFile: true
+
+  - changeSet:
+      id: 7
+      author: nikita
+      changes:
+        - sqlFile:
+            path: changes/V_007_disease_risk_rules.sql
+            relativeToChangelogFile: true
+
+  - changeSet:
+      id: 8
+      author: nikita
+      changes:
+        - sqlFile:
+            path: changes/V_008_disease_product_recommendations.sql
+            relativeToChangelogFile: true
+
+  - changeSet:
+      id: 9
+      author: nikita
+      changes:
+        - sqlFile:
+            path: changes/V_009_crop_protection_catalog.sql
+            relativeToChangelogFile: true
+
+  - changeSet:
+      id: 10
+      author: nikita
+      changes:
+        - sqlFile:
+            path: changes/V_010_nitrogen_balance.sql
+            relativeToChangelogFile: true
+
+  - changeSet:
+      id: 11
+      author: nikita
+      changes:
+        - sqlFile:
+            path: changes/V_011_drop_cost_per_hectare.sql
             relativeToChangelogFile: true

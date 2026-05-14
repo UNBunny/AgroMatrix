@@ -73,7 +73,6 @@ public interface DailyMapper {
                 addIfPresent(dateData.moisture, hourly.soilMoisture0To1Cm(), i);
             });
         }
-        // ДОБАВЬТЕ ЭТО ЛОГИРОВАНИЕ
         result.forEach((date, data) -> {
             logger.info("Date {}: temp0cm count={}, temp6cm count={}, moisture count={}",
                     date, data.temp0cm.size(), data.temp6cm.size(), data.moisture.size());

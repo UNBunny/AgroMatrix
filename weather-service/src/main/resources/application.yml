@@ -5,6 +5,9 @@ server:
 spring:
   application:
     name: weather-service
+  mvc:
+    async:
+      request-timeout: 120000
   jpa:
     show-sql: true
     hibernate:
@@ -34,8 +37,8 @@ spring:
 # Weather API Configuration
 weather:
   api:
-    forecast-base-url: https://api.open-meteo.com/v1
-    historical-base-url: https://archive-api.open-meteo.com/v1
+    forecast-base-url: http://api.open-meteo.com/v1
+    historical-base-url: http://archive-api.open-meteo.com/v1
     max-in-memory-size: 10485760  # 10MB
     historical-data-lag-days: 5
     long-period-threshold-months: 13
@@ -45,16 +48,16 @@ logging:
     org:
       springframework:
         transaction: INFO
-        transaction.interceptor: TRACE
+        transaction.interceptor: WARN
       orm:
         jpa: INFO
-        jpa.JpaTransactionManager: DEBUG
+        jpa.JpaTransactionManager: INFO
       hibernate:
-        SQL: DEBUG
+        SQL: INFO
         type:
           descriptor:
             sql:
-              BasicBinder: TRACE
+              BasicBinder: WARN
     com:
       omstu:
         weatherservice: INFO
@@ -66,8 +69,9 @@ eureka:
     register-with-eureka: true
     fetch-registry: true
   instance:
-    prefer-ip-address: true  # ???????????? IP ?????? hostname
-    instance-id: ${spring.application.name}:${server.port}
 
+    prefer-ip-address: true  # ???????????? IP ?????? hostname
+    ip-address: 127.0.0.1
+    instance-id: ${spring.application.name}:${server.port}
     register-with-eureka: true
     fetch-registry: true

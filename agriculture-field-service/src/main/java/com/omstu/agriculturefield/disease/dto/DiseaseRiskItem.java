@@ -5,10 +5,14 @@ import com.omstu.agriculturefield.disease.model.enums.RiskLevel;
 import java.util.List;
 
 public record DiseaseRiskItem(
+        Long ruleId,
         String diseaseName,
-        String scientificName,
+        String diseaseType,
         RiskLevel riskLevel,
-        Double probability,
-        List<String> triggerFactors,
-        String recommendation
+        Double riskScore,
+        String ruleDescription,
+        List<String> triggeredConditions,
+        String preventionAdvice,
+        String treatmentAdvice,
+        Integer urgencyDays
 ) {}

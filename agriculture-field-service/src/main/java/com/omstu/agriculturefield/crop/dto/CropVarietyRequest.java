@@ -1,18 +1,22 @@
 package com.omstu.agriculturefield.crop.dto;
 
 import com.omstu.agriculturefield.crop.model.enums.ToleranceLevel;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 
 import java.math.BigDecimal;
 
 public record CropVarietyRequest(
-        String name,
-        Long cropTypeId,
+        @NotBlank String name,
+        @NotNull Long cropTypeId,
         String seedProducer,
-        Integer maturationDays,
+        @Positive Integer maturationDays,
         ToleranceLevel droughtTolerance,
         ToleranceLevel frostTolerance,
-        BigDecimal recommendedSeedingRateKgPerHa,
-        BigDecimal seedCostPerKg,
+        @DecimalMin("0.0") BigDecimal recommendedSeedingRateKgPerHa,
+        @DecimalMin("0.0") BigDecimal seedCostPerKg,
         Boolean isHybrid,
         String notes
 ) {}
