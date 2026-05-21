@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-add-farm-id-to-users
+      author: auth-service
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: farm_id
+                  type: BIGINT
