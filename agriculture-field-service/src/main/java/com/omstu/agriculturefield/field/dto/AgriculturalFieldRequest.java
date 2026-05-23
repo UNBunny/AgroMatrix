@@ -16,5 +16,6 @@ public record AgriculturalFieldRequest(
         List<List<List<Double>>> holes,
         @DecimalMin("0.0") Double areaHectares,
         String regionCode,
-        String regionName
+        String regionName,
+        Long farmId
 ) {}

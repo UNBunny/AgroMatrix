@@ -13,5 +13,6 @@ public record AgriculturalFieldResponse(
         List<List<List<Double>>> holes,
         Double areaHectares,
         String regionCode,
-        String regionName
+        String regionName,
+        Long farmId
 ) {}

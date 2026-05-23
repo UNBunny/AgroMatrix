@@ -45,4 +45,7 @@ public class AgriculturalField {
     private String regionCode; // Код региона для ML-модели (OMS, ALT и т.д.)
 
     private String regionName; // Полное название региона (Омская область и т.д.)
+
+    @Column(name = "farm_id")
+    private Long farmId;
 }
