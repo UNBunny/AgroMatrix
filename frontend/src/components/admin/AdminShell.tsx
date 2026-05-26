@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import {
   Sprout, Bug, ChevronLeft, ChevronRight,
-  LayoutDashboard, ArrowLeftCircle, Settings, FlaskConical
+  LayoutDashboard, ArrowLeftCircle, Settings, FlaskConical, Users
 } from 'lucide-react'
 
 const adminNav = [
   { to: '/admin', icon: <LayoutDashboard size={18} />, label: 'Обзор', end: true },
+  { to: '/admin/users', icon: <Users size={18} />, label: 'Пользователи' },
   { to: '/admin/crops', icon: <Sprout size={18} />, label: 'Культуры и сорта' },
   { to: '/admin/diseases', icon: <Bug size={18} />, label: 'Болезни' },
   { to: '/admin/products', icon: <FlaskConical size={18} />, label: 'Каталог препаратов' },
@@ -64,7 +65,7 @@ export default function AdminShell() {
         <header className="admin-topbar">
           <div className="admin-topbar-title">
             <span className="admin-topbar-emoji">🌾</span>
-            <span>AgroPlanPro — Панель администратора</span>
+            <span>AgroMatrix — Панель администратора</span>
           </div>
         </header>
         <div className="admin-content-area">

@@ -88,7 +88,10 @@ export default function FieldEconomicsPage() {
   }, [selectedFieldId, loadHistory])
 
   useEffect(() => {
-    if (!selectedHistoryId) { setFertilizers([]); setProtections([]); return }
+    if (!selectedHistoryId) { setFertilizers([]); setProtections([]); setMlPrice(null); setMlPriceLabel(null); return }
+    // Resolve the history synchronously from the current cropHistories snapshot
+    // to avoid the stale-closure bug (selectedHistory lags one render behind)
+    const history = cropHistories.find(h => h.id === selectedHistoryId) ?? null
     Promise.all([
       fertilizerApplicationService.getByCropHistory(selectedHistoryId),
       plantProtectionService.getByCropHistory(selectedHistoryId),
@@ -96,21 +99,22 @@ export default function FieldEconomicsPage() {
       setFertilizers(f)
       setProtections(p)
       // подставляем дефолт по культуре
-      if (selectedHistory) {
-        const seed = CROP_SEED_DEFAULTS[selectedHistory.cropTypeName] ?? '1800'
-        setNorms(prev => ({ ...DEFAULT_NORMS, seedCostPerHa: seed, ...{ pricePerTon: prev.pricePerTon } }))
+      if (history) {
+        const seed = CROP_SEED_DEFAULTS[history.cropTypeName] ?? '1800'
+        const yieldCha = history.actualYieldKg != null ? String(+(history.actualYieldKg / 100).toFixed(1)) : ''
+        setNorms(prev => ({ ...DEFAULT_NORMS, seedCostPerHa: seed, actualYieldCha: yieldCha, pricePerTon: prev.pricePerTon }))
       }
       // Загружаем ML-прогноз цены для культуры
-      if (selectedHistory?.cropTypeName) {
+      if (history?.cropTypeName) {
         const CROP_NAME_TO_ML_CODE: Record<string, string> = {
           'Пшеница яровая': 'spring_wheat', 'Пшеница озимая': 'winter_wheat',
           'Ячмень яровой': 'spring_barley', 'Подсолнечник': 'sunflower',
           'Рапс': 'rapeseed', 'Кукуруза': 'corn', 'Горох': 'peas',
           'Гречиха': 'buckwheat', 'Лён': 'flax', 'Соя': 'soybean', 'Овёс': 'oat',
         }
-        const mlCode = CROP_NAME_TO_ML_CODE[selectedHistory.cropTypeName]
+        const mlCode = CROP_NAME_TO_ML_CODE[history.cropTypeName]
         if (mlCode) {
-          const year = new Date(selectedHistory.plantingDate).getFullYear()
+          const year = new Date(history.plantingDate).getFullYear()
           yieldService.forecastRegionsBulk({ crop: mlCode, year })
             .then(res => {
               const oms = res.regions.find(r => r.region_code === 'OMS')
@@ -119,10 +123,13 @@ export default function FieldEconomicsPage() {
                 setMlPriceLabel(`ML-прогноз для ${oms.region_name}, ${year}`)
               } else setMlPrice(null)
             }).catch(() => setMlPrice(null))
+        } else {
+          setMlPrice(null)
+          setMlPriceLabel(null)
         }
       }
     }).catch(() => {})
-  }, [selectedHistoryId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedHistoryId, cropHistories]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Расчёт ──────────────────────────────────────────────────────────────────
 
