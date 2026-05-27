@@ -1,18 +1,23 @@
 package com.omstu.ndvi.config;
 
-import com.github.benmanes.caffeine.cache.Caffeine;
+import com.omstu.ndvi.config.cache.CacheSpec;
+import com.omstu.ndvi.config.cache.TwoLevelCacheManager;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
-import org.springframework.cache.caffeine.CaffeineCache;
-import org.springframework.cache.support.SimpleCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 
+import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
+/**
+ * Двухуровневое кэширование: Caffeine (L1) + Redis (L2).
+ */
 @Configuration
 public class CacheConfig {
+
+    private static final String REDIS_KEY_PREFIX = "agro:ndvi:";
 
     @Value("${cache.ndvi-current.ttl-hours:24}")
     private long ndviCurrentTtlHours;
@@ -21,27 +26,11 @@ public class CacheConfig {
     private long defaultMaxSize;
 
     @Bean
-    public CacheManager cacheManager() {
-        SimpleCacheManager manager = new SimpleCacheManager();
-        manager.setCaches(List.of(
-                buildTtlCache("ndviCurrent", ndviCurrentTtlHours, defaultMaxSize),
-                buildEternalCache("ndviHistory", defaultMaxSize)
-        ));
-        return manager;
-    }
-
-    private CaffeineCache buildTtlCache(String name, long ttlHours, long maxSize) {
-        return new CaffeineCache(name, Caffeine.newBuilder()
-                .expireAfterWrite(ttlHours, TimeUnit.HOURS)
-                .maximumSize(maxSize)
-                .recordStats()
-                .build());
-    }
-
-    private CaffeineCache buildEternalCache(String name, long maxSize) {
-        return new CaffeineCache(name, Caffeine.newBuilder()
-                .maximumSize(maxSize)
-                .recordStats()
-                .build());
+    public CacheManager cacheManager(RedisConnectionFactory redisConnectionFactory) {
+        List<CacheSpec> specs = List.of(
+                CacheSpec.ttl("ndviCurrent", Duration.ofHours(ndviCurrentTtlHours), defaultMaxSize),
+                CacheSpec.eternal("ndviHistory", defaultMaxSize)
+        );
+        return new TwoLevelCacheManager(specs, redisConnectionFactory, REDIS_KEY_PREFIX);
     }
 }

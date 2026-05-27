@@ -61,7 +61,7 @@ public class MlCacheService {
     }
 
     // кэш без TTL — инвалидируется через @CacheEvict при обновлении почвы
-    @Cacheable(value = "soilRecommendations", key = "#fieldId")
+    @Cacheable(value = "soilRecommendations", key = "#fieldId", unless = "#result == null || #result.isEmpty()")
     public Map<String, Double> fetchSoilBasedRecommendations(Long fieldId, SoilData soilData, SeasonalWeatherDto weather) {
         if (soilData == null) {
             log.warn("No soil data available for recommendations, fieldId={}", fieldId);
@@ -108,7 +108,7 @@ public class MlCacheService {
     }
 
     // TTL 12 часов — задан в CacheConfig
-    @Cacheable(value = "yieldPredictions", key = "#regionCode + ':' + #cropCode + ':' + #year + ':' + (#weather == null ? 'null' : '' + #weather.precipOctMar() + '|' + #weather.precipAprMay() + '|' + #weather.precipJunJul() + '|' + #weather.precipAugSep() + '|' + #weather.tempSumAprMay() + '|' + #weather.tempSumJunJul() + '|' + #weather.tempSumAugSep())")
+    @Cacheable(value = "yieldPredictions", key = "#regionCode + ':' + #cropCode + ':' + #year + ':' + (#weather == null ? 'null' : '' + #weather.precipOctMar() + '|' + #weather.precipAprMay() + '|' + #weather.precipJunJul() + '|' + #weather.precipAugSep() + '|' + #weather.tempSumAprMay() + '|' + #weather.tempSumJunJul() + '|' + #weather.tempSumAugSep())", unless = "#result == null")
     public Double fetchPredictedYield(String regionCode, String cropCode, int year, SeasonalWeatherDto weather) {
         String resolvedRegionCode = regionCode != null ? regionCode : DEFAULT_REGION_CODE;
         if (regionCode == null) {
@@ -147,7 +147,7 @@ public class MlCacheService {
     }
 
     // TTL 24 часа — задан в CacheConfig
-    @Cacheable(value = "priceHistory", key = "#region + ':' + #cropCode")
+    @Cacheable(value = "priceHistory", key = "#region + ':' + #cropCode", unless = "#result == null")
     public PriceHistoryResponse fetchPriceHistory(String region, String cropCode) {
         try {
             return mlWebClient.get()
@@ -166,7 +166,7 @@ public class MlCacheService {
     }
 
     // TTL 12 часов — задан в CacheConfig
-    @Cacheable(value = "pricePredictions", key = "#region + ':' + #cropCode + ':' + #targetYear")
+    @Cacheable(value = "pricePredictions", key = "#region + ':' + #cropCode + ':' + #targetYear", unless = "#result == null")
     public Double fetchPredictedPrice(String region, String cropCode, Integer targetYear) {
         String resolvedRegion = region != null ? region : DEFAULT_REGION_NAME;
         if (region == null) {

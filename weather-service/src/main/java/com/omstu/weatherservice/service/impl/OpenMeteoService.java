@@ -11,11 +11,16 @@ import com.omstu.weatherservice.service.strategy.WeatherRequestStrategy;
 import com.omstu.weatherservice.service.utils.DateUtils;
 import com.omstu.weatherservice.validation.DateValidator;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.netty.http.client.HttpClient;
+import reactor.netty.resources.ConnectionProvider;
+import reactor.util.retry.Retry;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -37,12 +42,20 @@ public class OpenMeteoService implements ExternalFieldService {
     ) {
         this.forecastWebClient = webClientBuilder
                 .baseUrl(properties.getForecastBaseUrl())
+                .defaultHeader("User-Agent", "AgroPlanPro/1.0 (weather-service)")
                 .build();
 
-        this.historicalWebClient = webClientBuilder
+        HttpClient noPoolHttpClient = HttpClient.create(
+                        ConnectionProvider.newConnection())
+                .keepAlive(false);
+
+        this.historicalWebClient = WebClient.builder()
+                .clientConnector(new org.springframework.http.client.reactive.ReactorClientHttpConnector(noPoolHttpClient))
                 .codecs(configurer ->
                         configurer.defaultCodecs().maxInMemorySize(properties.getMaxInMemorySize()))
                 .baseUrl(properties.getHistoricalBaseUrl())
+                .defaultHeader("User-Agent", "AgroPlanPro/1.0 (weather-service)")
+                .defaultHeader("Connection", "close")
                 .build();
 
         this.openMeteoMapper = openMeteoMapper;
@@ -54,6 +67,16 @@ public class OpenMeteoService implements ExternalFieldService {
     }
 
     @Override
+    @Cacheable(
+            cacheNames = "weatherApi",
+            // Округление координат до 0.01° (~1 км): внутри ячейки данные Open-Meteo идентичны.
+            // Spring 6.1+ автоматически кэширует материализованное значение Mono.
+            key = "T(java.lang.Math).round(#lat * 100) / 100.0 + ',' " +
+                    "+ T(java.lang.Math).round(#lon * 100) / 100.0 + ':' " +
+                    "+ #type + ':' + (#days == null ? '-' : #days) + ':' " +
+                    "+ (#startDate == null ? '-' : #startDate) + ':' " +
+                    "+ (#endDate == null ? '-' : #endDate)"
+    )
     public Mono<OpenMeteoResponse> getWeather(
             Double lat, Double lon, WeatherRequestType type,
             Integer days, String startDate, String endDate
@@ -131,8 +154,13 @@ public class OpenMeteoService implements ExternalFieldService {
             WeatherRequestStrategy strategy, WebClient webClient, Double lat, Double lon
     ) {
         return strategy.execute(webClient, lat, lon)
+                .retryWhen(Retry.backoff(3, Duration.ofSeconds(2))
+                        .filter(e -> e instanceof reactor.netty.http.client.PrematureCloseException
+                                || e.getMessage() != null && e.getMessage().contains("prematurely"))
+                        .doBeforeRetry(s -> log.warn("Retrying {} request (attempt {}) for lat={}, lon={}",
+                                strategy.getType(), s.totalRetries() + 1, lat, lon)))
                 .doOnError(error ->
                         log.error("Failed to execute {} request for lat={}, lon={}: {}",
-                                strategy.getType(), lat, lon, error.getMessage(), error));
+                                strategy.getType(), lat, lon, error.getMessage()));
     }
 }
