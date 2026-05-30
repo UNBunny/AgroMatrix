@@ -6,11 +6,13 @@ from schemas.yield_schemas import (
     RegionsBulkRequest,
 )
 from predictors import yield_predictor
+from cache import redis_cache
 
 router = APIRouter(prefix="/api/yield", tags=["Yield"])
 
 
 @router.post("/predict", response_model=YieldResponse, summary="Predict yield for one region-crop-year")
+@redis_cache(name="yield_predict", ttl_seconds=43200)  # 12 ч — для исторического года можно дольше
 def predict(req: YieldRequest):
     try:
         result = yield_predictor.predict_yield_progressive(

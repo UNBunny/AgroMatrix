@@ -2,11 +2,13 @@ from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
 from schemas.price_schemas import PriceRequest, PriceResponse, PriceHistoryResponse, PriceTimeSeriesResponse
 from predictors import price_predictor
+from cache import redis_cache
 
 router = APIRouter(prefix="/api/price", tags=["Price"])
 
 
 @router.post("/predict", response_model=PriceResponse, summary="Predict crop price rub/ton")
+@redis_cache(name="price_predict", ttl_seconds=43200)  # 12 ч
 def predict(req: PriceRequest):
     explicit_lags = {k: v for k, v in {
         "price_lag1":  req.price_lag1,
@@ -56,6 +58,7 @@ def predict(req: PriceRequest):
 
 
 @router.get("/history", response_model=PriceHistoryResponse, summary="Get real price lags from historical CSV for a region+crop")
+@redis_cache(name="price_history", ttl_seconds=86400)  # 24 ч — CSV меняется редко
 def price_history(
     region: str = Query(..., examples=["Омская область"]),
     crop: str   = Query(..., examples=["wheat"]),
