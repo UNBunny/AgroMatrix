@@ -123,7 +123,7 @@ const NdviPanel = ({ field }: NdviPanelProps) => {
     try {
       const from = monthsAgoStr(12)
       const to = todayStr()
-      const result = await ndviService.getNdviHistory(field.id, from, to)
+      const result = await ndviService.getNdviHistoryAuto(field.id, field.coordinates, from, to)
       setAllHistory(result.history)
       if (result.current) setSelectedRecord(result.current)
       else if (result.history.length > 0) setSelectedRecord(result.history[result.history.length - 1])

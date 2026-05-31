@@ -131,7 +131,7 @@ export default function FieldWizardPage() {
     try {
       const res = await fetch(
         `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ru`,
-        { headers: { 'User-Agent': 'AgroPlanPro/1.0' } }
+        { headers: { 'User-Agent': 'AgroMatrix/1.0' } }
       )
       const data = await res.json()
       const addr = data.address || {}

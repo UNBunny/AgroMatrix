@@ -110,7 +110,7 @@ export default function MapPage() {
     const fieldsWithCrop = fields.filter(f => f.crop_type && f.crop_type !== 'Не задана')
     Promise.allSettled(
       fieldsWithCrop.map(f =>
-        recommendationService.getDiseaseRisk(f.id)
+        recommendationService.getDiseaseRisk(f.id, f.crop_type)
           .then(risk => ({ id: f.id, risk }))
       )
     ).then(results => {

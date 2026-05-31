@@ -116,7 +116,9 @@ export default function NdviMonitoringPage() {
     if (!selectedFieldId) return
     setLoading(true); setError(null)
     try {
-      const res = await ndviService.getNdviHistory(selectedFieldId, dateFrom, dateTo)
+      const res = selectedField?.coordinates
+        ? await ndviService.getNdviHistoryAuto(selectedFieldId, selectedField.coordinates, dateFrom, dateTo)
+        : await ndviService.getNdviHistory(selectedFieldId, dateFrom, dateTo)
       setHistory(res.history)
       if (res.current) setSelectedRecord(res.current)
       else if (res.history.length > 0) setSelectedRecord(res.history[res.history.length - 1])

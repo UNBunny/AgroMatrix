@@ -298,7 +298,7 @@ export default function FieldDetailPage() {
     if (!fieldId) return
     setLoadingNdvi(true); setNdviError(null)
     try {
-      const res = await ndviService.getNdviHistory(fieldId, monthsAgoStr(12), todayStr())
+      const res = await ndviService.getNdviHistoryAuto(fieldId, coords, monthsAgoStr(12), todayStr())
       setNdviHistory(res.history)
       setCurrentNdvi(res.current ?? (res.history.length ? res.history[res.history.length - 1] : null))
 

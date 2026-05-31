@@ -24,6 +24,24 @@ export const ndviService = {
     return response.data
   },
 
+  async getNdviHistoryAuto(
+    fieldId: number,
+    coordinates: number[][],
+    from?: string,
+    to?: string,
+    fieldName?: string
+  ): Promise<NdviHistoryResponse> {
+    const body = {
+      fieldId,
+      fieldName: fieldName ?? '',
+      coordinates,
+      dateStart: from ?? new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+      dateEnd: to ?? new Date().toISOString().slice(0, 10),
+    }
+    const response = await api.post<NdviHistoryResponse>('/ndvi/history/auto', body)
+    return response.data
+  },
+
   async refreshNdvi(
     fieldId: number,
     fieldName: string,
