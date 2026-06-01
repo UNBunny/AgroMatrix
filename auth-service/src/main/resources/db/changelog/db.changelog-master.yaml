@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - include:
+      file: classpath:db/changelog/001-create-users.yaml
+  - include:
+      file: classpath:db/changelog/002-create-refresh-tokens.yaml
+  - include:
+      file: classpath:db/changelog/003-add-farm-id-to-users.yaml
+  - include:
+      file: classpath:db/changelog/004-user-farms.yaml

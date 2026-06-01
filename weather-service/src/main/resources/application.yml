@@ -33,12 +33,33 @@ spring:
   sql:
     init:
       mode: always
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2s
+      connect-timeout: 2s
+      lettuce:
+        pool:
+          enabled: true
+          max-active: 16
+          max-idle: 8
+          min-idle: 1
+          max-wait: 1s
+
+cache:
+  weather-api:
+    ttl-minutes: 60
+    max-size: 2000
+  seasonal-metrics:
+    ttl-hours: 720   # 30 дней
+    max-size: 5000
 
 # Weather API Configuration
 weather:
   api:
-    forecast-base-url: http://api.open-meteo.com/v1
-    historical-base-url: http://archive-api.open-meteo.com/v1
+    forecast-base-url: https://api.open-meteo.com/v1
+    historical-base-url: https://archive-api.open-meteo.com/v1
     max-in-memory-size: 10485760  # 10MB
     historical-data-lag-days: 5
     long-period-threshold-months: 13
@@ -65,13 +86,21 @@ logging:
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
     register-with-eureka: true
     fetch-registry: true
   instance:
 
     prefer-ip-address: true  # ???????????? IP ?????? hostname
-    ip-address: 127.0.0.1
     instance-id: ${spring.application.name}:${server.port}
     register-with-eureka: true
     fetch-registry: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,caches,metrics
+  endpoint:
+    health:
+      show-details: when-authorized

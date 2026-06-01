@@ -1,4 +1,4 @@
-/* ===== Global Styles — AgroPlanPro ===== */
+/* ===== Global Styles — AgroMatrix ===== */
 @import './variables.css';
 
 *, *::before, *::after {
@@ -2218,4 +2218,255 @@ textarea.form-input {
   }
 }
 
+/* ===== PLAN APPROVAL PAGE ===== */
+.plan-page {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+}
 
+.plan-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  gap: 12px;
+}
+.plan-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1px solid;
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all var(--transition);
+  font-family: inherit;
+}
+.status-pill:hover {
+  opacity: 0.85;
+}
+
+.plan-create-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.plan-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.plan-card-info {
+  flex: 1;
+  min-width: 0;
+}
+.plan-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+.plan-card-meta {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+.plan-card-desc {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+.plan-review-comment {
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.plan-reviewer {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+}
+.plan-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.plan-review-box {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: var(--border-radius);
+}
+.plan-review-box-title {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: var(--color-text);
+}
+.plan-review-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.plan-empty {
+  text-align: center;
+  color: var(--color-text-muted);
+  padding: 60px 20px;
+  border: 2px dashed var(--color-border);
+  border-radius: var(--border-radius-lg);
+}
+
+/* ===== AUDIT LOG PAGE ===== */
+.audit-page {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.audit-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  gap: 12px;
+}
+.audit-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.audit-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.audit-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.audit-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 700px;
+}
+.audit-table thead tr {
+  background: var(--color-bg);
+  border-bottom: 2px solid var(--color-border);
+}
+.audit-table th {
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+.audit-table td {
+  padding: 8px 14px;
+}
+.audit-table tbody tr {
+  border-bottom: 1px solid var(--color-border);
+}
+.audit-table tbody tr:nth-child(even) {
+  background: var(--color-bg);
+}
+
+.audit-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--color-border);
+}
+.audit-pagination-info {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.audit-export-btns {
+  display: flex;
+  gap: 8px;
+}
+
+/* ── Plan & Audit mobile ── */
+@media (max-width: 768px) {
+  .plan-header,
+  .audit-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .plan-card {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .plan-card-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .plan-create-form {
+    grid-template-columns: 1fr;
+  }
+
+  .audit-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .audit-export-btns {
+    width: 100%;
+  }
+  .audit-export-btns .btn-secondary {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .plan-card-meta {
+    flex-direction: column;
+    gap: 2px;
+  }
+  .status-filters {
+    gap: 6px;
+  }
+  .status-pill {
+    padding: 4px 10px;
+    font-size: 12px;
+  }
+}

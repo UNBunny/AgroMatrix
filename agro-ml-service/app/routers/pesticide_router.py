@@ -1,12 +1,14 @@
 from fastapi import APIRouter, HTTPException
 from schemas.agro_schemas import PesticideRequest, PesticideResponse
 from predictors import agro_predictor
+from cache import redis_cache
 
 router = APIRouter(prefix="/api/pesticide", tags=["Agrochemistry"])
 
 
 @router.post("/recommend", response_model=PesticideResponse,
              summary="Recommend pesticide by crop, pest type and infestation intensity")
+@redis_cache(name="pesticide_recommend", ttl_seconds=86400)
 def recommend(req: PesticideRequest):
     try:
         result = agro_predictor.recommend_pesticide(

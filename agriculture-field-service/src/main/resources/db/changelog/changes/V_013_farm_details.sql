@@ -1,0 +1,6 @@
+ALTER TABLE farms
+    ADD COLUMN inn     VARCHAR(12),
+    ADD COLUMN kpp     VARCHAR(9),
+    ADD COLUMN ogrn    VARCHAR(15),
+    ADD COLUMN region  VARCHAR(255),
+    ADD COLUMN address VARCHAR(500);

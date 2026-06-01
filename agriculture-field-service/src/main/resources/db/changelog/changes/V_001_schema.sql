@@ -105,7 +105,7 @@ CREATE TABLE crop_rotation_rules (
 
 COMMENT ON COLUMN crop_rotation_rules.recommendation IS 'Gradient agronomic recommendation: STRONGLY_RECOMMENDED/RECOMMENDED/ACCEPTABLE/NOT_RECOMMENDED/FORBIDDEN';
 
-CREATE TABLE ndvi_records (
+CREATE TABLE IF NOT EXISTS ndvi_records (
     id          BIGSERIAL PRIMARY KEY,
     field_id    BIGINT REFERENCES agricultural_fields(id) ON DELETE CASCADE,
     record_date DATE          NOT NULL,
@@ -117,8 +117,8 @@ CREATE TABLE ndvi_records (
     created_at  TIMESTAMP     NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_ndvi_records_field_date        ON ndvi_records(field_id, record_date DESC);
-CREATE UNIQUE INDEX idx_ndvi_records_field_date_unique ON ndvi_records(field_id, record_date);
+CREATE INDEX IF NOT EXISTS idx_ndvi_records_field_date        ON ndvi_records(field_id, record_date DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_ndvi_records_field_date_unique ON ndvi_records(field_id, record_date);
 
 CREATE TABLE soil_data (
     id                BIGSERIAL PRIMARY KEY,

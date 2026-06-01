@@ -20,6 +20,7 @@
     <modules>
         <module>api-gateway</module>
         <module>eureka-server</module>
+        <module>auth-service</module>
         <module>agriculture-field-service</module>
         <module>weather-service</module>
         <module>ndvi-service</module>

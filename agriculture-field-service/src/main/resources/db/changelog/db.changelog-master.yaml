@@ -86,3 +86,27 @@ databaseChangeLog:
         - sqlFile:
             path: changes/V_011_drop_cost_per_hectare.sql
             relativeToChangelogFile: true
+
+  - changeSet:
+      id: 12
+      author: nikita
+      changes:
+        - sqlFile:
+            path: changes/V_012_farms.sql
+            relativeToChangelogFile: true
+
+  - changeSet:
+      id: 13
+      author: nikita
+      changes:
+        - sqlFile:
+            path: changes/V_013_farm_details.sql
+            relativeToChangelogFile: true
+
+  - changeSet:
+      id: 14
+      author: nikita
+      changes:
+        - sqlFile:
+            path: changes/V_014_reports_and_audit.sql
+            relativeToChangelogFile: true

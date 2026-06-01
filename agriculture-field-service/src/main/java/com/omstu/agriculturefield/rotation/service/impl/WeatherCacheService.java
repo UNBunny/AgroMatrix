@@ -83,7 +83,7 @@ public class WeatherCacheService {
                             .build())
                     .retrieve()
                     .bodyToMono(SeasonalWeatherDto.class)
-                    .timeout(Duration.ofSeconds(15))
+                    .timeout(Duration.ofSeconds(5))
                     .doOnNext(dto -> persistenceService.persist(latR, lonR, year, dto))
                     .onErrorResume(e -> {
                         log.warn("Weather API failed for year {}: {}", year, e.getMessage());
@@ -98,7 +98,7 @@ public class WeatherCacheService {
             List<SeasonalWeatherDto> apiResults = Flux.fromIterable(apiMonos)
                     .concatMap(mono -> mono.delaySubscription(Duration.ofMillis(300)))
                     .collectList()
-                    .block(Duration.ofSeconds(90));
+                    .block(Duration.ofSeconds(120));
             if (apiResults != null) {
                 results.addAll(apiResults);
             }

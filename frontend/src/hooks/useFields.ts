@@ -42,10 +42,24 @@ export function useFields(options: UseFieldsOptions = {}): UseFieldsResult {
           data.map(async (f) => {
             try {
               const rec = await ndviService.getCurrentNdvi(f.id)
-              entries[f.id] = rec.mean
-            } catch {
-              entries[f.id] = null
-            }
+              if (rec?.mean != null) {
+                entries[f.id] = rec.mean
+                return
+              }
+            } catch { /* нет в БД — идём дальше */ }
+            // Если в БД пусто — запускаем авто-фетч из GEE (не блокируем карту)
+            ndviService.getNdviHistoryAuto(
+              f.id, f.coordinates,
+              new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+              new Date().toISOString().slice(0, 10)
+            ).then(res => {
+              const last = res.history.length > 0 ? res.history[res.history.length - 1] : null
+              const mean = res.current?.mean ?? last?.mean ?? null
+              if (mean != null) {
+                setNdviMap(prev => ({ ...prev, [f.id]: mean }))
+              }
+            }).catch(() => {})
+            entries[f.id] = null
           })
         )
         setNdviMap(entries)

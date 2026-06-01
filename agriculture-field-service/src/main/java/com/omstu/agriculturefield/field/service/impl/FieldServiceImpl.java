@@ -9,8 +9,9 @@ import com.omstu.agriculturefield.field.mapper.AgriculturalFieldMapper;
 import com.omstu.agriculturefield.field.model.AgriculturalField;
 import com.omstu.agriculturefield.field.repository.AgriculturalFieldRepository;
 import com.omstu.agriculturefield.crop.repository.CropHistoryRepository;
+import com.omstu.agriculturefield.field.kafka.FieldCreatedEvent;
+import com.omstu.agriculturefield.field.kafka.FieldEventProducer;
 import com.omstu.agriculturefield.field.service.FieldService;
-import com.omstu.agriculturefield.field.service.NdviServiceClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.locationtech.jts.geom.Coordinate;
@@ -28,38 +29,44 @@ import java.util.stream.Collectors;
 public class FieldServiceImpl implements FieldService {
     private final AgriculturalFieldRepository fieldRepository;
     private final AgriculturalFieldMapper fieldMapper;
-    private final NdviServiceClient ndviServiceClient;
+    private final FieldEventProducer fieldEventProducer;
     private final CropHistoryRepository cropHistoryRepository;
 
     private static final Set<String> VALID_STATUSES = Set.of("ACTIVE", "INACTIVE", "FALLOW", "PENDING");
 
     @Override
-    public AgriculturalFieldResponse createField(AgriculturalFieldRequest request) {
-        validateFieldRequest(request, null);
+    public AgriculturalFieldResponse createField(AgriculturalFieldRequest request, Long farmId) {
+        validateFieldRequest(request, null, farmId);
 
         AgriculturalField field = fieldMapper.toEntity(request);
+        field.setFarmId(farmId);
         AgriculturalField savedField = fieldRepository.save(field);
-        log.info("Agricultural field created with ID: {}", savedField.getId());
+        log.info("Agricultural field created with ID: {}, farmId: {}", savedField.getId(), farmId);
         if (savedField.getGeom() != null) {
             List<List<Double>> coordinates = extractCoordinates(savedField);
-            ndviServiceClient.initNdviHistoryAsync(savedField.getId(), savedField.getFieldName(), coordinates);
+            fieldEventProducer.sendFieldCreated(
+                    new FieldCreatedEvent(savedField.getId(), savedField.getFieldName(), coordinates));
         }
         return fieldMapper.toResponse(savedField);
     }
 
-    private void validateFieldRequest(AgriculturalFieldRequest request, Long existingId) {
+    private void validateFieldRequest(AgriculturalFieldRequest request, Long existingId, Long farmId) {
         // Validate field name
         if (request.fieldName() == null || request.fieldName().trim().isEmpty()) {
             throw new ValidationException("Field name cannot be empty");
         }
 
-        // Check for duplicate field name
+        // Check for duplicate field name within the same farm
         if (existingId == null) {
-            if (fieldRepository.existsByFieldName(request.fieldName())) {
+            if (farmId != null && fieldRepository.existsByFieldNameAndFarmId(request.fieldName(), farmId)) {
+                throw new ConflictException("Field with name '" + request.fieldName() + "' already exists");
+            } else if (farmId == null && fieldRepository.existsByFieldName(request.fieldName())) {
                 throw new ConflictException("Field with name '" + request.fieldName() + "' already exists");
             }
         } else {
-            if (fieldRepository.existsByFieldNameAndIdNot(request.fieldName(), existingId)) {
+            if (farmId != null && fieldRepository.existsByFieldNameAndIdNotAndFarmId(request.fieldName(), existingId, farmId)) {
+                throw new ConflictException("Field with name '" + request.fieldName() + "' already exists");
+            } else if (farmId == null && fieldRepository.existsByFieldNameAndIdNot(request.fieldName(), existingId)) {
                 throw new ConflictException("Field with name '" + request.fieldName() + "' already exists");
             }
         }
@@ -90,26 +97,37 @@ public class FieldServiceImpl implements FieldService {
     }
 
     @Override
-    public List<AgriculturalFieldResponse> getAllFields() {
-
+    public List<AgriculturalFieldResponse> getAllFields(Long farmId) {
+        if (farmId != null) {
+            return fieldRepository.findAllByFarmId(farmId).stream()
+                    .map(fieldMapper::toResponse)
+                    .collect(Collectors.toList());
+        }
         return fieldRepository.findAll().stream()
                 .map(fieldMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public AgriculturalFieldResponse getFieldById(Long id) {
-        AgriculturalField field = fieldRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Field not found with id: " + id));
+    public AgriculturalFieldResponse getFieldById(Long id, Long farmId) {
+        AgriculturalField field = farmId != null
+                ? fieldRepository.findByIdAndFarmId(id, farmId)
+                        .orElseThrow(() -> new NotFoundException("Field not found with id: " + id))
+                : fieldRepository.findById(id)
+                        .orElseThrow(() -> new NotFoundException("Field not found with id: " + id));
         return fieldMapper.toResponse(field);
     }
 
     @Override
-    public AgriculturalFieldResponse updateField(Long id, AgriculturalFieldRequest request) {
-        AgriculturalField field = fieldRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Field not found with id: " + id));
-        validateFieldRequest(request, id);
+    public AgriculturalFieldResponse updateField(Long id, AgriculturalFieldRequest request, Long farmId) {
+        AgriculturalField field = farmId != null
+                ? fieldRepository.findByIdAndFarmId(id, farmId)
+                        .orElseThrow(() -> new NotFoundException("Field not found with id: " + id))
+                : fieldRepository.findById(id)
+                        .orElseThrow(() -> new NotFoundException("Field not found with id: " + id));
+        validateFieldRequest(request, id, farmId);
         AgriculturalField updatedField = fieldMapper.toEntityWithId(id, request);
+        updatedField.setFarmId(field.getFarmId());
         fieldRepository.save(updatedField);
         log.info("Agricultural field updated with ID: {}", updatedField.getId());
         return fieldMapper.toResponse(updatedField);
@@ -117,12 +135,14 @@ public class FieldServiceImpl implements FieldService {
 
     @Override
     @Transactional
-    public void deleteField(Long id) {
-        if (!fieldRepository.existsById(id)) {
-            throw new NotFoundException("Field not found with id: " + id);
-        }
-        cropHistoryRepository.deleteByFieldId(id);
-        fieldRepository.deleteById(id);
+    public void deleteField(Long id, Long farmId) {
+        AgriculturalField field = farmId != null
+                ? fieldRepository.findByIdAndFarmId(id, farmId)
+                        .orElseThrow(() -> new NotFoundException("Field not found with id: " + id))
+                : fieldRepository.findById(id)
+                        .orElseThrow(() -> new NotFoundException("Field not found with id: " + id));
+        cropHistoryRepository.deleteByFieldId(field.getId());
+        fieldRepository.deleteById(field.getId());
         log.info("Agricultural field deleted with ID: {}", id);
     }
 }

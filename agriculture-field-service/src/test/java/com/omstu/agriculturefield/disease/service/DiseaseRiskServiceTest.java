@@ -7,7 +7,7 @@ import com.omstu.agriculturefield.disease.model.DiseaseRiskRule;
 import com.omstu.agriculturefield.disease.model.enums.DiseaseType;
 import com.omstu.agriculturefield.disease.model.enums.RiskLevel;
 import com.omstu.agriculturefield.disease.repository.DiseaseRiskRuleRepository;
-import com.omstu.agriculturefield.disease.service.impl.DiseaseRiskService;
+import com.omstu.agriculturefield.disease.service.impl.DiseaseRiskServiceImpl;
 import com.omstu.agriculturefield.disease.service.impl.WeatherServiceClient;
 import com.omstu.agriculturefield.field.model.AgriculturalField;
 import com.omstu.agriculturefield.field.repository.AgriculturalFieldRepository;
@@ -46,7 +46,7 @@ class DiseaseRiskServiceTest {
     private AgriculturalFieldRepository fieldRepository;
 
     @InjectMocks
-    private DiseaseRiskService diseaseRiskService;
+    private DiseaseRiskServiceImpl diseaseRiskService;
 
     private AgriculturalField testField;
     private GeometryFactory geometryFactory;

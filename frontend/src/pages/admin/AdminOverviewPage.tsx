@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Sprout, Bug, Leaf, ArrowRight, TrendingUp, FlaskConical } from 'lucide-react'
+import { Sprout, Bug, Leaf, ArrowRight, TrendingUp, FlaskConical, FileSpreadsheet } from 'lucide-react'
 import { cropTypeService, cropVarietyService } from '../../services/cropService'
 import { diseaseService } from '../../services/diseaseService'
 import { catalogEntryService } from '../../services/catalogEntryService'
+import { downloadApiXls } from '../../services/exportService'
 
 interface StatCard {
   label: string
@@ -17,6 +18,14 @@ export default function AdminOverviewPage() {
   const navigate = useNavigate()
   const [stats, setStats] = useState({ cropTypes: 0, varieties: 0, diseases: 0, products: 0 })
   const [loading, setLoading] = useState(true)
+  const [exporting, setExporting] = useState(false)
+
+  async function handleEnterpriseExport() {
+    setExporting(true)
+    try {
+      await downloadApiXls('/enterprise/report/export', 'enterprise-report.xlsx')
+    } catch (e) { console.error(e) } finally { setExporting(false) }
+  }
 
   useEffect(() => {
     Promise.all([
@@ -68,7 +77,7 @@ export default function AdminOverviewPage() {
           <h1>Обзор справочников</h1>
         </div>
         <p className="admin-page-subtitle">
-          Управление справочными данными системы AgroPlanPro
+          Управление справочными данными системы AgroMatrix
         </p>
       </div>
 
@@ -109,6 +118,10 @@ export default function AdminOverviewPage() {
           <button className="admin-quick-btn" onClick={() => navigate('/admin/products')}>
             <FlaskConical size={18} />
             Каталог препаратов
+          </button>
+          <button className="admin-quick-btn" onClick={handleEnterpriseExport} disabled={exporting}>
+            <FileSpreadsheet size={18} />
+            {exporting ? 'Загрузка...' : 'Сводный отчёт (Excel)'}
           </button>
         </div>
       </div>

@@ -8,4 +8,12 @@ public interface AgriculturalFieldRepository extends JpaRepository<AgriculturalF
     boolean existsByFieldName(String fieldName);
 
     boolean existsByFieldNameAndIdNot(String fieldName, Long id);
+
+    boolean existsByFieldNameAndFarmId(String fieldName, Long farmId);
+
+    boolean existsByFieldNameAndIdNotAndFarmId(String fieldName, Long id, Long farmId);
+
+    java.util.List<AgriculturalField> findAllByFarmId(Long farmId);
+
+    java.util.Optional<AgriculturalField> findByIdAndFarmId(Long id, Long farmId);
 }

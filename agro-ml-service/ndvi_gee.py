@@ -34,7 +34,8 @@ def init_gee(project: str | None = None):
     Credentials читаются из %USERPROFILE%\\.config\\earthengine\\credentials
     (сохраняются командой: .venv\\Scripts\\earthengine set_project ee-agroplan)
     """
-    gee_project = project or "ee-agroplan"
+    import os
+    gee_project = project or os.getenv("GEE_PROJECT", "ee-agroplan")
     try:
         ee.Initialize(project=gee_project)
         print(f"[OK] Google Earth Engine инициализирован (project={gee_project}).")

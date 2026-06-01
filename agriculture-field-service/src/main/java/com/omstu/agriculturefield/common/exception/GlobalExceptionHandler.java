@@ -68,6 +68,20 @@ public class GlobalExceptionHandler {
                 .body(errorBody(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage()));
     }
 
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<Map<String, Object>> handleForbidden(ForbiddenException ex) {
+        log.warn("Forbidden: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(errorBody(HttpStatus.FORBIDDEN, ex.getMessage()));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, Object>> handleGeneral(Exception ex) {
+        log.error("Unhandled exception: {}", ex.getMessage(), ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(errorBody(HttpStatus.INTERNAL_SERVER_ERROR, "Внутренняя ошибка сервера"));
+    }
+
     private Map<String, Object> errorBody(HttpStatus status, String message) {
         return Map.of(
                 "timestamp", LocalDateTime.now().toString(),
