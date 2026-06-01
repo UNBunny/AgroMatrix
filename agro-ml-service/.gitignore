@@ -10,8 +10,8 @@ __pycache__/
 venv/
 env/
 
-# Models (large binary files — copy manually or via DVC)
-models/*.pkl
+# Models - now tracked in Git LFS
+# models/*.pkl  - disabled, using Git LFS instead
 models/*.json
 models/*.csv
 !models/.gitkeep
