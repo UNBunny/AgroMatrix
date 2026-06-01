@@ -100,6 +100,14 @@ spring:
                 - RewritePath=/ml/health, /health
                 - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
 
+            # Swagger UI через agriculture-field-service
+            - id: swagger-ui
+              uri: lb://agriculture-field-service
+              predicates:
+                - Path=/swagger-ui.html,/swagger-ui/**,/v3/api-docs/**,/webjars/swagger-ui/**
+              filters:
+                - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+
 jwt:
   secret: ${JWT_SECRET:aGroPlanProSuperSecretKeyForJwtSigningAtLeast256BitsLong!!}
 
