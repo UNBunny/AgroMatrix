@@ -21,7 +21,7 @@ cd frontend && npm install && npm run dev
 
 | Ресурс | Описание |
 |--------|----------|
-| [Полная документация](https://github.com/UNBunny/AgroMatrix/wiki) | Архитектура, API, деплой |
+| [Полная документация](./docs/ARCHITECTURE.md) | Архитектура, API, деплой |
 | [Swagger UI](http://localhost:8090/docs) | Документация ML API |
 | [Swagger Gateway](http://localhost:8080/swagger-ui.html) | Документация backend API |
 
@@ -57,3 +57,4 @@ L-- docker-compose.yml    # Инфраструктура
 ## Лицензия
 
 MIT
+
