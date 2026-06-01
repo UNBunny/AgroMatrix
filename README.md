@@ -312,6 +312,157 @@ python train/train_agro_models.py
 - Доступ к Redis для кэширования
 - Google Earth Engine credentials (для NDVI)
 
+## Backend API
+
+Бэкенд системы построен на микросервисной архитектуре. Каждый сервис предоставляет REST API через Spring Boot контроллеры. Все запросы от frontend проходят через API Gateway, который маршрутизирует их в соответствующие сервисы.
+
+### Базовые URL сервисов
+
+| Сервис | Базовый URL | Порт |
+|--------|-------------|------|
+| API Gateway | `http://localhost:8080` | 8080 |
+| Auth Service | `http://localhost:8085` | 8085 |
+| Agriculture Field Service | `http://localhost:8081` | 8081 |
+| Weather Service | `http://localhost:8082` | 8082 |
+| NDVI Service | `http://localhost:8083` | 8083 |
+
+### Auth Service API
+
+Базовый путь: `/api/auth`
+
+| Метод | Эндпоинт | Описание |
+|-------|----------|----------|
+| POST | `/api/auth/register` | Регистрация нового пользователя |
+| POST | `/api/auth/login` | Вход в систему, получение JWT |
+| POST | `/api/auth/refresh` | Обновление access токена |
+| POST | `/api/auth/logout` | Выход из системы |
+| POST | `/api/auth/join` | Присоединение к хозяйству по коду |
+
+### Admin API (Auth Service)
+
+Базовый путь: `/api/admin`
+
+| Метод | Эндпоинт | Описание |
+|-------|----------|----------|
+| GET | `/api/admin/users` | Список всех пользователей (для админа) |
+| GET | `/api/admin/users/{id}` | Информация о пользователе |
+
+### Farm API (Agriculture Field Service)
+
+Базовый путь: `/api/farms`
+
+| Метод | Эндпоинт | Описание |
+|-------|----------|----------|
+| POST | `/api/farms` | Создание нового хозяйства |
+| GET | `/api/farms/{id}` | Получение информации о хозяйстве |
+| POST | `/api/farms/join` | Присоединение к хозяйству по коду приглашения |
+| POST | `/api/farms/{id}/regenerate-invite` | Генерация нового кода приглашения |
+
+### Agricultural Fields API
+
+Базовый путь: `/api/fields`
+
+| Метод | Эндпоинт | Описание |
+|-------|----------|----------|
+| GET | `/api/fields` | Список всех полей пользователя |
+| POST | `/api/fields` | Создание нового поля |
+| GET | `/api/fields/{id}` | Информация о поле |
+| PUT | `/api/fields/{id}` | Обновление данных поля |
+| DELETE | `/api/fields/{id}` | Удаление поля |
+
+### Crop Management API
+
+Базовый путь: `/api/crops`
+
+| Метод | Эндпоинт | Описание |
+|-------|----------|----------|
+| GET | `/api/crops/types` | Справочник типов культур |
+| GET | `/api/crops/varieties` | Справочник сортов |
+| GET | `/api/crops/history` | История посевов по полям |
+| POST | `/api/crops/history` | Добавление записи о посеве |
+
+### Rotation API (Севооборот)
+
+Базовый путь: `/api/rotation`
+
+| Метод | Эндпоинт | Описание |
+|-------|----------|----------|
+| GET | `/api/rotation/rules` | Правила севооборота |
+| GET | `/api/rotation/recommendations` | Рекомендации по севообороту |
+
+### Disease API
+
+Базовый путь: `/api/disease`
+
+| Метод | Эндпоинт | Описание |
+|-------|----------|----------|
+| GET | `/api/disease` | Справочник болезней |
+| POST | `/api/disease/risk/assess` | Оценка риска заболеваний |
+| GET | `/api/disease/resistance` | Данные по устойчивости сортов |
+
+### Plant Protection API
+
+Базовый путь: `/api/protection`
+
+| Метод | Эндпоинт | Описание |
+|-------|----------|----------|
+| GET | `/api/protection/catalog` | Каталог средств защиты растений |
+| POST | `/api/protection/decisions` | Принятие решений по защите |
+
+### Reports and Plans API
+
+Базовый путь: `/api/reports`
+
+| Метод | Эндпоинт | Описание |
+|-------|----------|----------|
+| GET | `/api/reports/fields` | Отчеты по полям |
+| GET | `/api/reports/plans` | Планы сезона |
+| POST | `/api/reports/plans` | Создание плана |
+| GET | `/api/reports/audit` | Журнал аудита действий |
+| GET | `/api/reports/export/xls` | Экспорт отчета в Excel |
+
+### Weather Service API
+
+Базовый путь: `/api/weather`
+
+| Метод | Эндпоинт | Описание |
+|-------|----------|----------|
+| GET | `/api/weather/current` | Текущая погода по координатам |
+| GET | `/api/weather/forecast` | Прогноз погоды |
+| GET | `/api/agro-metrics` | Агрометеорологические показатели |
+| GET | `/api/agro-metrics/gtk` | Расчет гидротермического коэффициента |
+
+### NDVI Service API
+
+Базовый путь: `/api/ndvi`
+
+| Метод | Эндпоинт | Описание |
+|-------|----------|----------|
+| GET | `/api/ndvi/fields/{id}` | История NDVI для поля |
+| POST | `/api/ndvi/calculate` | Расчет NDVI для произвольного полигона |
+| GET | `/api/ndvi/stats` | Статистика NDVI по регионам |
+
+### Soil Data API
+
+Базовый путь: `/api/soil`
+
+| Метод | Эндпоинт | Описание |
+|-------|----------|----------|
+| GET | `/api/soil/horizons` | Почвенные горизонты |
+| GET | `/api/soil/data` | Данные о почвах |
+
+### Аутентификация запросов
+
+Все запросы к защищенным эндпоинтам требуют JWT токен в cookie `access_token` или заголовке `Authorization: Bearer {token}`.
+
+Дополнительные заголовки для внутренней маршрутизации:
+
+| Заголовок | Описание |
+|-----------|----------|
+| `X-Auth-User-Id` | ID текущего пользователя (проставляется Gateway) |
+| `X-Auth-Farm-Id` | ID текущего хозяйства пользователя |
+| `X-User-Roles` | Роли пользователя |
+
 ## Структура проекта
 
 ```text
