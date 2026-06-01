@@ -29,7 +29,10 @@ public class JwtGatewayFilter implements GlobalFilter, Ordered {
             "/api/auth/logout",
             "/api/auth/join",
             "/api/farms/join",
-            "/actuator"
+            "/actuator",
+            "/swagger-ui",
+            "/v3/api-docs",
+            "/webjars"
     );
 
     @Override
