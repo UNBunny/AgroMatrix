@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import {
   Building2, MapPin, Phone, Mail, User, Edit2, Save, X,
-  Layers, Sprout, TrendingUp, Calendar, ChevronRight
+  Layers, Sprout, TrendingUp, Calendar, ChevronRight, FileSpreadsheet, Download
 } from 'lucide-react'
 import { fieldService } from '../services/fieldService'
 import { cropHistoryService } from '../services/cropService'
+import { downloadApiXls } from '../services/exportService'
+import { useAuth } from '../context/AuthContext'
 
 const STORAGE_KEY = 'farm_profile'
 
@@ -64,11 +66,21 @@ function StatCard({ icon, label, value, sub }: StatBox) {
 }
 
 export default function FarmProfilePage() {
+  const { user } = useAuth()
   const [profile, setProfile] = useState<FarmProfile>(loadProfile)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState<FarmProfile>(profile)
   const [stats, setStats] = useState({ fields: 0, totalHa: 0, activeSeedings: 0 })
   const [statsLoading, setStatsLoading] = useState(true)
+  const [exporting, setExporting] = useState(false)
+
+  async function handleExportSowingHistory() {
+    if (!user?.farmId) return
+    setExporting(true)
+    try {
+      await downloadApiXls(`/farms/${user.farmId}/sowing-history/export`, `sowing-history-${user.farmId}.xlsx`)
+    } catch (e) { console.error(e) } finally { setExporting(false) }
+  }
 
   useEffect(() => {
     Promise.all([fieldService.getAllFields(), cropHistoryService.getAll()])
@@ -161,6 +173,24 @@ export default function FarmProfilePage() {
           />
         )}
       </div>
+
+      {/* ── Export ── */}
+      {user?.farmId && (
+        <div className="card" style={{ marginBottom: 20, padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 500 }}>
+            <Download size={16} /> Экспорт данных
+          </div>
+          <button
+            className="btn-secondary"
+            onClick={handleExportSowingHistory}
+            disabled={exporting}
+            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+          >
+            <FileSpreadsheet size={15} />
+            {exporting ? 'Загрузка...' : 'История посевов (Excel)'}
+          </button>
+        </div>
+      )}
 
       {/* ── Info Blocks ── */}
       {!editing ? (

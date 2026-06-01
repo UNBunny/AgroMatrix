@@ -1,18 +1,26 @@
 package com.omstu.agriculturefield.config;
 
-import com.github.benmanes.caffeine.cache.Caffeine;
+import com.omstu.agriculturefield.config.cache.CacheSpec;
+import com.omstu.agriculturefield.config.cache.TwoLevelCacheManager;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
-import org.springframework.cache.caffeine.CaffeineCache;
-import org.springframework.cache.support.SimpleCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 
+import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
+/**
+ * Двухуровневое кэширование: Caffeine (L1) + Redis (L2).
+ * <p>
+ * Имена кэшей и их TTL должны совпадать с теми, что используются в коде через
+ * {@code @Cacheable(value = "...")}. При добавлении нового кэша — добавить сюда.
+ */
 @Configuration
 public class CacheConfig {
+
+    private static final String REDIS_KEY_PREFIX = "agro:field:";
 
     @Value("${cache.weather-climate.ttl-hours:24}")
     private long weatherClimateTtlHours;
@@ -32,31 +40,22 @@ public class CacheConfig {
     @Value("${cache.max-size:1000}")
     private long defaultMaxSize;
 
+    @Value("${cache.soil-grids.ttl-hours:720}")
+    private long soilGridsTtlHours;
+
+    @Value("${cache.soil-grids.max-size:5000}")
+    private long soilGridsMaxSize;
+
     @Bean
-    public CacheManager cacheManager() {
-        SimpleCacheManager manager = new SimpleCacheManager();
-        manager.setCaches(List.of(
-                buildTtlCache("weatherClimate",      weatherClimateTtlHours,    weatherClimateMaxSize),
-                buildTtlCache("yieldPredictions",    yieldPredictionsTtlHours,  defaultMaxSize),
-                buildTtlCache("pricePredictions",    pricePredictionsTtlHours,  defaultMaxSize),
-                buildTtlCache("priceHistory",        priceHistoryTtlHours,      defaultMaxSize),
-                buildEternalCache("soilRecommendations", defaultMaxSize)
-        ));
-        return manager;
-    }
-
-    private CaffeineCache buildTtlCache(String name, long ttlHours, long maxSize) {
-        return new CaffeineCache(name, Caffeine.newBuilder()
-                .expireAfterWrite(ttlHours, TimeUnit.HOURS)
-                .maximumSize(maxSize)
-                .recordStats()
-                .build());
-    }
-
-    private CaffeineCache buildEternalCache(String name, long maxSize) {
-        return new CaffeineCache(name, Caffeine.newBuilder()
-                .maximumSize(maxSize)
-                .recordStats()
-                .build());
+    public CacheManager cacheManager(RedisConnectionFactory redisConnectionFactory) {
+        List<CacheSpec> specs = List.of(
+                CacheSpec.ttl("weatherClimate",   Duration.ofHours(weatherClimateTtlHours),  weatherClimateMaxSize),
+                CacheSpec.ttl("yieldPredictions", Duration.ofHours(yieldPredictionsTtlHours), defaultMaxSize),
+                CacheSpec.ttl("pricePredictions", Duration.ofHours(pricePredictionsTtlHours), defaultMaxSize),
+                CacheSpec.ttl("priceHistory",     Duration.ofHours(priceHistoryTtlHours),     defaultMaxSize),
+                CacheSpec.ttl("soilGrids",        Duration.ofHours(soilGridsTtlHours),        soilGridsMaxSize),
+                CacheSpec.eternal("soilRecommendations", defaultMaxSize)
+        );
+        return new TwoLevelCacheManager(specs, redisConnectionFactory, REDIS_KEY_PREFIX);
     }
 }

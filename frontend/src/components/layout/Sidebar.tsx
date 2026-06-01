@@ -1,11 +1,15 @@
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import {
   Map, LayoutDashboard, Layers,
   Book, ChevronLeft, ChevronRight, User, Repeat2,
   TrendingUp, ShieldAlert, FlaskConical, X,
-  BarChart3, Sprout, Settings, Building2, Calculator
+  BarChart3, Sprout, Settings, Building2, Calculator, LogOut,
+  CheckSquare, History, FileBarChart
 } from 'lucide-react'
 import { AppRole, ROLE_LABELS } from '../../hooks/useRole'
+import { useAuth } from '../../context/AuthContext'
+import { reportService } from '../../services/reportService'
 
 interface SidebarProps {
   collapsed: boolean
@@ -51,6 +55,14 @@ const navGroups = [
     ]
   },
   {
+    label: 'Отчётность и планы',
+    items: [
+      { to: '/reports', icon: <FileBarChart size={18} />, label: 'Сводный отчёт' },
+      { to: '/plans',   icon: <CheckSquare size={18} />,  label: 'Утверждение планов' },
+      { to: '/audit',   icon: <History size={18} />,      label: 'Журнал изменений' },
+    ]
+  },
+  {
     label: 'Справочники',
     items: [
       { to: '/crops',    icon: <Book size={18} />,   label: 'Культуры и сорта' },
@@ -61,6 +73,22 @@ const navGroups = [
 
 export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose, role = 'agronomist' }: SidebarProps) {
   const location = useLocation()
+  const navigate = useNavigate()
+  const { user, logout } = useAuth()
+  const isDirector = user?.role === 'DIRECTOR' || user?.role === 'ADMIN'
+  const [pendingCount, setPendingCount] = useState(0)
+
+  useEffect(() => {
+    if (!isDirector) return
+    reportService.getPlans({ status: 'PENDING_APPROVAL' })
+      .then(plans => setPendingCount(plans.length))
+      .catch(() => {})
+  }, [isDirector, location.pathname])
+
+  async function handleLogout() {
+    await logout()
+    navigate('/login', { replace: true })
+  }
 
   return (
     <aside className={`sidebar${collapsed ? ' collapsed' : ''}${mobileOpen ? ' mobile-open' : ''}`}>
@@ -68,7 +96,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
       <div className="sidebar-header">
         <div className="sidebar-logo">
           <span className="sidebar-logo-icon">🌾</span>
-          {!collapsed && <span className="sidebar-logo-text">AgroPlanPro</span>}
+          {!collapsed && <span className="sidebar-logo-text">AgroMatrix</span>}
         </div>
         <button className="sidebar-mobile-close" onClick={onMobileClose} aria-label="Закрыть меню">
           <X size={16} />
@@ -95,6 +123,13 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
                 >
                   <span className="link-icon">{item.icon}</span>
                   {!collapsed && <span className="link-label">{item.label}</span>}
+                  {item.to === '/plans' && isDirector && pendingCount > 0 && (
+                    <span style={{
+                      marginLeft: 'auto', background: 'var(--color-danger)',
+                      color: '#fff', borderRadius: 10, fontSize: 10,
+                      fontWeight: 700, padding: '1px 6px', lineHeight: '16px'
+                    }}>{pendingCount}</span>
+                  )}
                 </NavLink>
               )
             })}
@@ -127,11 +162,23 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
             <User size={14} />
           </div>
           {!collapsed && (
-            <div className="sidebar-user-info">
-              <div className="sidebar-user-name">{ROLE_LABELS[role]}</div>
-              <div className="sidebar-user-role">AgroPlanPro</div>
+            <div className="sidebar-user-info" style={{ flex: 1, minWidth: 0 }}>
+              <div className="sidebar-user-name" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {user ? (user.firstName || user.username) : ROLE_LABELS[role]}
+              </div>
+              <div className="sidebar-user-role">
+                {user?.role === 'AGRONOMIST' ? 'Агроном' : user?.role === 'DIRECTOR' ? 'Руководитель' : user?.role === 'ADMIN' ? 'Администратор' : 'AgroMatrix'}
+              </div>
             </div>
           )}
+          <button
+            className="sidebar-logout-btn"
+            onClick={handleLogout}
+            data-tooltip={collapsed ? 'Выйти' : undefined}
+            title="Выйти"
+          >
+            <LogOut size={14} />
+          </button>
         </div>
       </div>
     </aside>

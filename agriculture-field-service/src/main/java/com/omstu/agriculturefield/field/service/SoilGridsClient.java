@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -38,6 +39,17 @@ public class SoilGridsClient {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * Получить агрохимические данные SoilGrids по координатам.
+     * Кэшируется на {@code soilGrids} (TTL 30 дней): данные SoilGrids — статичные слои почвы,
+     * меняются крайне редко (новый релиз раз в несколько лет). Округление до 3 знаков ≈ 100 м.
+     */
+    @Cacheable(
+            cacheNames = "soilGrids",
+            key = "T(java.lang.Math).round(#lat * 1000) / 1000.0 + ',' " +
+                    "+ T(java.lang.Math).round(#lon * 1000) / 1000.0",
+            unless = "#result == null"
+    )
     public SoilGridsData fetchSoilData(double lat, double lon) {
         log.info("Fetching SoilGrids data for coordinates: {}, {}", lat, lon);
 

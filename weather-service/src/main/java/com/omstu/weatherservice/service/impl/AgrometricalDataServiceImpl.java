@@ -7,6 +7,7 @@ import com.omstu.weatherservice.dto.WeatherRequestType;
 import com.omstu.weatherservice.service.AgroMetricsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -288,6 +289,15 @@ public class AgrometricalDataServiceImpl implements AgroMetricsService {
     }
 
     @Override
+    @Cacheable(
+            cacheNames = "seasonalMetrics",
+            // Кэш только для ПРОШЕДШИХ лет — там данные неизменны (TTL 30 дн).
+            // Для текущего года данные ежедневно дополняются Open-Meteo → не кэшируем здесь,
+            // но внутренний вызов getWeather всё равно кэшируется на 1 ч в "weatherApi".
+            key = "T(java.lang.Math).round(#lat * 100) / 100.0 + ',' " +
+                    "+ T(java.lang.Math).round(#lon * 100) / 100.0 + ':' + #year",
+            condition = "#year != null && #year < T(java.time.Year).now().getValue()"
+    )
     public Mono<SeasonalAgrometricsResponse> calculateSeasonalMetrics(
             Double lat, Double lon, Integer year) {
 

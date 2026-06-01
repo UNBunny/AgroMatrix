@@ -39,7 +39,7 @@ export default function Topbar({ onHamburgerClick, role = 'agronomist', onRoleCh
         <Menu size={20} />
       </button>
       <div className="topbar-breadcrumbs">
-        <span className="breadcrumb-item">AgroPlanPro</span>
+        <span className="breadcrumb-item">AgroMatrix</span>
         {crumbs.map((crumb, i) => (
           <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span className="breadcrumb-sep">/</span>

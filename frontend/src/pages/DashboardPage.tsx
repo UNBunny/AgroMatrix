@@ -113,7 +113,7 @@ export default function DashboardPage() {
         </div>
         <div className="card card-padding" style={{ textAlign: 'center', padding: 60 }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>🌾</div>
-          <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Добро пожаловать в AgroPlanPro!</div>
+          <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Добро пожаловать в AgroMatrix!</div>
           <div style={{ fontSize: 14, color: 'var(--color-text-muted)', maxWidth: 400, margin: '0 auto 24px' }}>
             Добавьте первое поле, чтобы начать мониторинг NDVI, получать прогнозы болезней и рекомендации по севообороту.
           </div>

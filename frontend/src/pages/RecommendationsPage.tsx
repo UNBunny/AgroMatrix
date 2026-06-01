@@ -220,11 +220,11 @@ function VarietyCard({ v }: { v: VarietyRecommendation }) {
       </div>
       {v.recommendedRegions && (
         <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>
-          📍 {v.recommendedRegions}
+          {v.recommendedRegions}
         </div>
       )}
       {v.whyRecommended && (
-        <div style={{ fontSize: 11, color: '#2980b9', marginTop: 4 }}>💡 {v.whyRecommended}</div>
+        <div style={{ fontSize: 11, color: '#2980b9', marginTop: 4 }}>{v.whyRecommended}</div>
       )}
     </div>
   )
@@ -246,7 +246,7 @@ function SowingWindowBlock({ sw }: { sw: SowingWindow }) {
       borderRadius: 6,
     }}>
       <div style={{ fontWeight: 600, fontSize: 12, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-        🌱 Рекомендуемые сроки посева
+        Рекомендуемые сроки посева
         {sw.forecastAdjusted && (
           <span style={{
             fontSize: 10, fontWeight: 600, padding: '1px 6px',
@@ -269,10 +269,10 @@ function SowingWindowBlock({ sw }: { sw: SowingWindow }) {
         </div>
       </div>
       {sw.forecastNote && (
-        <div style={{ fontSize: 11, color: '#2980b9', marginTop: 6 }}>📡 {sw.forecastNote}</div>
+        <div style={{ fontSize: 11, color: '#2980b9', marginTop: 6 }}>{sw.forecastNote}</div>
       )}
       {sw.climateNote && (
-        <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>📊 {sw.climateNote}</div>
+        <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>{sw.climateNote}</div>
       )}
     </div>
   )
@@ -547,10 +547,10 @@ export default function RecommendationsPage() {
               </div>
               {result.metadata && (
                 <div style={{ fontSize: 11, color: 'var(--color-text-muted)', textAlign: 'right', lineHeight: 1.6 }}>
-                  <div>📍 {result.metadata.regionName}</div>
-                  {result.metadata.lastCropName && <div>🌾 Прошлая культура: <b>{result.metadata.lastCropName}</b></div>}
-                  {result.metadata.soilPh && <div>🧪 pH: {result.metadata.soilPh.toFixed(1)}{result.metadata.soilType ? ` · ${getSoilTextureLabel(result.metadata.soilType)}` : ''}</div>}
-                  <div>📊 {result.metadata.scoringMethodology}</div>
+                  <div>{result.metadata.regionName}</div>
+                  {result.metadata.lastCropName && <div>Прошлая культура: <b>{result.metadata.lastCropName}</b></div>}
+                  {result.metadata.soilPh && <div>pH: {result.metadata.soilPh.toFixed(1)}{result.metadata.soilType ? ` · ${getSoilTextureLabel(result.metadata.soilType)}` : ''}</div>}
+                  <div>{result.metadata.scoringMethodology}</div>
                 </div>
               )}
             </div>

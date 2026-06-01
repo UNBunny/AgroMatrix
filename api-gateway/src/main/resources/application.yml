@@ -27,6 +27,7 @@ spring:
                   - GET
                   - POST
                   - PUT
+                  - PATCH
                   - DELETE
                   - OPTIONS
                 allowedHeaders:
@@ -42,10 +43,31 @@ spring:
               enabled: true
               lower-case-service-id: true
           routes:
+            - id: auth-service
+              uri: lb://auth-service
+              predicates:
+                - Path=/api/auth/**
+              filters:
+                - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+
+            - id: admin-auth-service
+              uri: lb://auth-service
+              predicates:
+                - Path=/api/admin/users/**
+              filters:
+                - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+
+            - id: admin-field-service
+              uri: lb://agriculture-field-service
+              predicates:
+                - Path=/api/admin/farms/**
+              filters:
+                - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+
             - id: agriculture-field-service
               uri: lb://agriculture-field-service
               predicates:
-                - Path=/api/fields/**,/api/crop-type/**,/api/crop-variety/**,/api/crop-histories/**,/api/diseases/**,/api/disease-resistances/**,/api/crop-rotation/**,/api/disease-product-recommendations/**,/api/fertilizer-applications/**,/api/plant-protection/**,/api/phenological-observations/**
+                - Path=/api/fields/**,/api/farms/**,/api/crop-type/**,/api/crop-variety/**,/api/crop-histories/**,/api/diseases/**,/api/disease-resistances/**,/api/crop-rotation/**,/api/disease-product-recommendations/**,/api/fertilizer-applications/**,/api/plant-protection/**,/api/phenological-observations/**,/api/plans/**,/api/audit/**,/api/reports/**
               filters:
                 - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
 
@@ -78,6 +100,9 @@ spring:
                 - RewritePath=/ml/health, /health
                 - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
 
+jwt:
+  secret: ${JWT_SECRET:aGroPlanProSuperSecretKeyForJwtSigningAtLeast256BitsLong!!}
+
 eureka:
   client:
     service-url:
@@ -86,4 +111,4 @@ eureka:
     fetch-registry: true
   instance:
     prefer-ip-address: true
-    ip-address: 127.0.0.1
+
