@@ -107,6 +107,14 @@ eureka:
     prefer-ip-address: true  # Использовать IP вместо hostname
     instance-id: ${spring.application.name}:${server.port}
 
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+
 management:
   endpoints:
     web:
